@@ -15,9 +15,9 @@ jobs:
       matrix:
         variant:
           - suffix: ""
-            bun_runtime: ""
+            bun_variant: ""
           - suffix: "-baseline"
-            bun_runtime: "baseline"
+            bun_variant: "baseline"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -66,7 +66,7 @@ jobs:
           build-args: |
             UV_VERSION=${{ steps.versions.outputs.uv }}
             OPENCODE_VERSION=${{ steps.versions.outputs.opencode }}
-            BUN_RUNTIME=${{ matrix.variant.bun_runtime }}
+            BUN_VARIANT=${{ matrix.variant.bun_variant }}
           cache-from: type=gha,scope=${{ matrix.variant.suffix }}
           cache-to: type=gha,mode=max,scope=${{ matrix.variant.suffix }}
           target: runner
