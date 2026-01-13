@@ -28,10 +28,30 @@ RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | d
 
 RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
 
-RUN curl -fsSL https://bun.sh/install | bash && \
-    mv /root/.bun /opt/bun && \
-    chmod -R 755 /opt/bun && \
-    ln -s /opt/bun/bin/bun /usr/local/bin/bun
+ARG BUN_VARIANT=""
+RUN apt-get update && apt-get install -y unzip && rm -rf /var/lib/apt/lists/* && \
+    ARCH=$(dpkg --print-architecture) && \
+    if [ "$ARCH" = "amd64" ]; then \
+        BUN_ARCH="x64"; \
+        if [ -n "${BUN_VARIANT}" ]; then \
+            BUN_URL="https://github.com/oven-sh/bun/releases/latest/download/bun-linux-${BUN_ARCH}-${BUN_VARIANT}.zip"; \
+        else \
+            BUN_URL="https://github.com/oven-sh/bun/releases/latest/download/bun-linux-${BUN_ARCH}.zip"; \
+        fi; \
+    elif [ "$ARCH" = "arm64" ]; then \
+        BUN_ARCH="aarch64"; \
+        BUN_URL="https://github.com/oven-sh/bun/releases/latest/download/bun-linux-${BUN_ARCH}.zip"; \
+    else \
+        echo "Unsupported architecture: $ARCH" && exit 1; \
+    fi && \
+    echo "Downloading Bun from: ${BUN_URL}" && \
+    curl -fsSL "${BUN_URL}" -o /tmp/bun.zip && \
+    unzip /tmp/bun.zip -d /tmp && \
+    mkdir -p /opt/bun/bin && \
+    mv /tmp/bun-linux-${BUN_ARCH}*/bun /opt/bun/bin/ && \
+    chmod +x /opt/bun/bin/bun && \
+    ln -s /opt/bun/bin/bun /usr/local/bin/bun && \
+    rm -rf /tmp/bun.zip /tmp/bun-linux-*
 
 WORKDIR /app
 
