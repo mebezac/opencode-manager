@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { streamSSE } from 'hono/streaming'
+import { stream } from 'hono/streaming'
 import { sseAggregator } from '../services/sse-aggregator'
 import { SSESubscribeSchema } from '@opencode-manager/shared/schemas'
 import { logger } from '../utils/logger'
@@ -11,13 +11,24 @@ export function createSSERoutes() {
     const directoriesParam = c.req.query('directories')
     const directories = directoriesParam ? directoriesParam.split(',').filter(Boolean) : []
 
-    return streamSSE(c, async (stream) => {
+    return stream(c, async (stream) => {
       const clientId = `client_${Date.now()}_${Math.random().toString(36).slice(2)}`
+
+      c.header('Content-Type', 'text/event-stream')
+      c.header('Cache-Control', 'no-cache')
+      c.header('Connection', 'keep-alive')
+      c.header('X-Accel-Buffering', 'no')
+
+      const writeSSE = async (event: string, data: string) => {
+        await stream.write(`event: ${event}\ndata: ${data}\n\n`)
+      }
 
       const cleanup = sseAggregator.addClient(
         clientId,
         (event, data) => {
-          stream.writeSSE({ event, data })
+          writeSSE(event, data).catch(err => {
+            logger.error(`Failed to write SSE event for ${clientId}:`, err)
+          })
         },
         directories
       )
@@ -27,10 +38,7 @@ export function createSSERoutes() {
       })
 
       try {
-        await stream.writeSSE({
-          event: 'connected',
-          data: JSON.stringify({ clientId, directories, ...sseAggregator.getConnectionStatus() })
-        })
+        await writeSSE('connected', JSON.stringify({ clientId, directories, ...sseAggregator.getConnectionStatus() }))
       } catch (err) {
         logger.error(`Failed to send SSE connected event for ${clientId}:`, err)
       }
