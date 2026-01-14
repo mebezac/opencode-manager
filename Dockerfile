@@ -1,4 +1,4 @@
-FROM node:24-bookworm AS base
+FROM node:24.12.0-bookworm AS base
 
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
