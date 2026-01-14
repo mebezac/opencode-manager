@@ -29,14 +29,9 @@ RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | d
 RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
-ENV MISE_DATA_DIR="/usr/local/share/mise"
-ENV MISE_CONFIG_DIR="/usr/local/share/mise"
-ENV MISE_CACHE_DIR="/usr/local/share/mise/cache"
 ENV MISE_INSTALL_PATH="/usr/local/bin/mise"
-ENV PATH="/usr/local/share/mise/shims:$PATH"
 
 RUN curl https://mise.run | sh && \
-    mkdir -p /usr/local/share/mise && \
     echo 'eval "$(mise activate bash)"' >> /etc/bash.bashrc && \
     mise --version
 
@@ -112,6 +107,10 @@ ENV PORT=5003
 ENV OPENCODE_SERVER_PORT=5551
 ENV DATABASE_PATH=/app/data/opencode.db
 ENV WORKSPACE_PATH=/workspace
+ENV MISE_DATA_DIR=/workspace/mise
+ENV MISE_CONFIG_DIR=/workspace/mise/config
+ENV MISE_CACHE_DIR=/workspace/mise/cache
+ENV PATH="/workspace/mise/shims:$PATH"
 
 COPY --from=deps --chown=node:node /app/node_modules ./node_modules
 COPY --from=builder /app/shared ./shared
@@ -125,7 +124,7 @@ RUN mkdir -p /app/backend/node_modules/@opencode-manager && \
 COPY scripts/docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
 
-RUN mkdir -p /workspace /app/data && \
+RUN mkdir -p /workspace /app/data /workspace/mise /workspace/mise/config /workspace/mise/cache /workspace/mise/shims && \
     chown -R node:node /workspace /app/data
 
 EXPOSE 5003 5100 5101 5102 5103
