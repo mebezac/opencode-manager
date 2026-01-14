@@ -1,4 +1,4 @@
-FROM node:20 AS base
+FROM node:24-bookworm AS base
 
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
@@ -22,6 +22,9 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     python3-pip \
     python3-venv \
     unzip \
+    screen \
+    htop \
+    tmux \
     && rm -rf /var/lib/apt/lists/*
 
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
