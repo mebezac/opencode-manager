@@ -19,12 +19,14 @@ import { MentionSuggestions, type MentionItem } from './MentionSuggestions'
 import { SessionStatusIndicator } from '@/components/ui/session-status-indicator'
 import { ModelQuickSelect } from '@/components/model/ModelQuickSelect'
 import { detectMentionTrigger, parsePromptToParts, getFilename, filterAgentsByQuery } from '@/lib/promptParser'
+import { showToast } from '@/lib/toast'
 
 
 import type { components } from '@/api/opencode-types'
 import type { MessageWithParts, FileInfo, ImageAttachment } from '@/api/types'
 
 const ACCEPTED_IMAGE_TYPES = ["image/png", "image/jpeg", "image/gif", "image/webp", "image/heic", "image/heif"]
+const ACCEPTED_TEXT_TYPES = ["text/plain", "text/markdown", "application/json"]
 
 
 const revokeBlobUrls = (attachments: ImageAttachment[]) => {
@@ -35,7 +37,7 @@ const revokeBlobUrls = (attachments: ImageAttachment[]) => {
   })
 }
 
-const ACCEPTED_FILE_TYPES = [...ACCEPTED_IMAGE_TYPES, "application/pdf"]
+const ACCEPTED_FILE_TYPES = [...ACCEPTED_IMAGE_TYPES, "application/pdf", ...ACCEPTED_TEXT_TYPES]
 
 
 type CommandType = components['schemas']['Command']
@@ -508,8 +510,16 @@ export const PromptInput = forwardRef<PromptInputHandle, PromptInputProps>(funct
 
   const handleFileInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.currentTarget.files?.[0]
-    if (file && ACCEPTED_FILE_TYPES.includes(file.type)) {
-      addImageAttachment(file)
+    if (file) {
+      const fileExtension = file.name.split('.').pop()?.toLowerCase()
+      const isAcceptedByMimeType = ACCEPTED_FILE_TYPES.includes(file.type)
+      const isAcceptedByExtension = fileExtension && ['txt', 'md', 'json', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'heic', 'heif', 'pdf'].includes(fileExtension)
+      
+      if (isAcceptedByMimeType || isAcceptedByExtension) {
+        addImageAttachment(file)
+      } else {
+        showToast.warning(`File type "${file.type || 'unknown'}" is not supported. Supported types: images (PNG, JPEG, GIF, WebP, HEIC, HEIF), PDF, JSON, TXT, and Markdown.`)
+      }
     }
     event.currentTarget.value = ''
   }
@@ -830,7 +840,7 @@ return (
             type="button"
             onClick={() => fileInputRef.current?.click()}
             className="hidden md:block p-2 rounded-lg bg-muted hover:bg-muted-foreground/20 text-muted-foreground hover:text-foreground transition-all duration-200 active:scale-95 hover:scale-105 shadow-md border border-border"
-            title="Upload image or PDF"
+            title="Upload file (images, PDF, JSON, TXT, MD)"
           >
             <Upload className="w-5 h-5" />
           </button>
