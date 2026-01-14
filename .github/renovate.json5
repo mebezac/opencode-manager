@@ -190,24 +190,6 @@
       "depNameTemplate": "oven-sh/bun",
       "datasourceTemplate": "github-releases",
       "extractVersionTemplate": "^(?<version>.*)$"
-    },
-    {
-      "description": "Track uv version in GitHub Actions",
-      "fileMatch": ["^\\.github/workflows/.*\\.yml$"],
-      "matchStrings": [
-        "UV_VERSION=\\$\\(git ls-remote.*?astral-sh/uv\\.git.*?\\)"
-      ],
-      "depNameTemplate": "astral-sh/uv",
-      "datasourceTemplate": "github-releases"
-    },
-    {
-      "description": "Track opencode version in GitHub Actions",
-      "fileMatch": ["^\\.github/workflows/.*\\.yml$"],
-      "matchStrings": [
-        "OPENCODE_VERSION=\\$\\(curl.*?anomalyco/opencode/releases/latest.*?\\)"
-      ],
-      "depNameTemplate": "anomalyco/opencode",
-      "datasourceTemplate": "github-releases"
     }
   ]
 }
