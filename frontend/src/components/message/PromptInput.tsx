@@ -420,13 +420,15 @@ export const PromptInput = forwardRef<PromptInputHandle, PromptInputProps>(funct
     const isSecureContext = window.isSecureContext || (window.location.protocol === 'http:' && window.location.hostname === 'localhost')
 
     if (isIOS && isSecureContext && navigator.clipboard && navigator.clipboard.read) {
-      event.preventDefault()
       try {
         const clipboardItems = await navigator.clipboard.read()
+        let hasImageContent = false
         
         for (const item of clipboardItems) {
           for (const type of item.types) {
             if (ACCEPTED_FILE_TYPES.includes(type) || type.startsWith('image/')) {
+              hasImageContent = true
+              event.preventDefault()
               try {
                 const blob = await item.getType(type)
                 const file = new File([blob], `pasted-${Date.now()}.${type.split('/')[1]}`, { type })
@@ -437,7 +439,9 @@ export const PromptInput = forwardRef<PromptInputHandle, PromptInputProps>(funct
             }
           }
         }
-        return
+        if (hasImageContent) {
+          return
+        }
       } catch (error) {
         console.error('Clipboard read failed on iOS:', error)
       }
