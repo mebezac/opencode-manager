@@ -7,9 +7,12 @@ import { SessionDetail } from './pages/SessionDetail'
 import { SettingsDialog } from './components/settings/SettingsDialog'
 import { useSettingsDialog } from './hooks/useSettingsDialog'
 import { useTheme } from './hooks/useTheme'
+import { usePWA } from './hooks/usePWA'
 import { TTSProvider } from './contexts/TTSContext'
 import { EventProvider, usePermissions } from '@/contexts/EventContext'
 import { PermissionRequestDialog } from './components/session/PermissionRequestDialog'
+import { NotificationPermissionPrompt } from './components/notifications/NotificationPermissionPrompt'
+import { useEffect, useState } from 'react'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -22,7 +25,24 @@ const queryClient = new QueryClient({
 
 function RouterContent() {
   const { isOpen, close } = useSettingsDialog()
+  const [showNotificationPrompt, setShowNotificationPrompt] = useState(false)
   useTheme()
+  usePWA()
+
+  useEffect(() => {
+    const hasSeenPrompt = localStorage.getItem('notification-prompt-seen')
+    if (!hasSeenPrompt) {
+      const timer = setTimeout(() => {
+        setShowNotificationPrompt(true)
+      }, 3000)
+      return () => clearTimeout(timer)
+    }
+  }, [])
+
+  const handleCloseNotificationPrompt = () => {
+    setShowNotificationPrompt(false)
+    localStorage.setItem('notification-prompt-seen', 'true')
+  }
 
   return (
     <>
@@ -38,6 +58,9 @@ function RouterContent() {
         richColors
         closeButton
       />
+      {showNotificationPrompt && (
+        <NotificationPermissionPrompt onClose={handleCloseNotificationPrompt} />
+      )}
     </>
   )
 }

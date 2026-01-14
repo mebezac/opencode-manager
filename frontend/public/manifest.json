@@ -16,5 +16,6 @@
     }
   ],
   "categories": ["developer", "productivity", "utilities"],
-  "lang": "en"
+  "lang": "en",
+  "permissions": ["notifications"]
 }
