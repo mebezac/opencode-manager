@@ -1,0 +1,213 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    "helpers:pinGitHubActionDigests"
+  ],
+  "timezone": "UTC",
+  "schedule": ["before 5am on Monday"],
+  "labels": ["dependencies"],
+  "semanticCommits": "enabled",
+  "rangeStrategy": "bump",
+  "separateMajorMinor": true,
+  "separateMultipleMajor": true,
+  "prConcurrentLimit": 10,
+  "prCreation": "immediate",
+  "prHourlyLimit": 0,
+  "automerge": false,
+  "platformAutomerge": false,
+  "ignoreDeps": [],
+  "vulnerabilityAlerts": {
+    "labels": ["security"],
+    "schedule": ["at any time"]
+  },
+  "packageRules": [
+    {
+      "description": "Group all pnpm updates together",
+      "matchPackageNames": ["pnpm"],
+      "matchManagers": ["npm", "dockerfile"],
+      "groupName": "pnpm",
+      "automerge": true,
+      "minimumReleaseAge": "3 days"
+    },
+    {
+      "description": "Group Node.js Docker base image updates",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["node"],
+      "groupName": "Node.js Docker",
+      "schedule": ["before 5am on the first day of the month"],
+      "automerge": false
+    },
+    {
+      "description": "Automerge non-major npm updates after 3 days",
+      "matchDatasources": ["npm"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "automerge": true,
+      "automergeType": "pr",
+      "minimumReleaseAge": "3 days"
+    },
+    {
+      "description": "Require approval for major npm updates",
+      "matchDatasources": ["npm"],
+      "matchUpdateTypes": ["major"],
+      "dependencyDashboardApproval": true,
+      "automerge": false
+    },
+    {
+      "description": "Group React ecosystem packages",
+      "matchPackageNames": ["react", "react-dom"],
+      "matchPackagePatterns": ["^@types/react"],
+      "groupName": "React",
+      "automerge": false
+    },
+    {
+      "description": "Group Radix UI packages",
+      "matchPackagePatterns": ["^@radix-ui/"],
+      "groupName": "Radix UI",
+      "automerge": true,
+      "minimumReleaseAge": "3 days"
+    },
+    {
+      "description": "Group TanStack packages",
+      "matchPackagePatterns": ["^@tanstack/"],
+      "groupName": "TanStack",
+      "automerge": true,
+      "minimumReleaseAge": "3 days"
+    },
+    {
+      "description": "Group DnD Kit packages",
+      "matchPackagePatterns": ["^@dnd-kit/"],
+      "groupName": "DnD Kit",
+      "automerge": true,
+      "minimumReleaseAge": "3 days"
+    },
+    {
+      "description": "Group Tailwind CSS packages",
+      "matchPackageNames": ["tailwindcss", "autoprefixer", "postcss", "tailwind-merge"],
+      "matchPackagePatterns": ["^@tailwindcss/"],
+      "groupName": "Tailwind CSS",
+      "automerge": true,
+      "minimumReleaseAge": "3 days"
+    },
+    {
+      "description": "Group ESLint packages",
+      "matchPackageNames": ["eslint"],
+      "matchPackagePatterns": ["^@eslint/", "^eslint-", "^typescript-eslint"],
+      "groupName": "ESLint",
+      "automerge": true,
+      "minimumReleaseAge": "3 days"
+    },
+    {
+      "description": "Group TypeScript packages",
+      "matchPackageNames": ["typescript"],
+      "matchPackagePatterns": ["^@types/"],
+      "groupName": "TypeScript",
+      "automerge": false
+    },
+    {
+      "description": "Group Vite and related packages",
+      "matchPackageNames": ["vite"],
+      "matchPackagePatterns": ["^@vitejs/", "^vite-"],
+      "groupName": "Vite",
+      "automerge": true,
+      "minimumReleaseAge": "3 days"
+    },
+    {
+      "description": "Group Vitest packages",
+      "matchPackageNames": ["vitest"],
+      "matchPackagePatterns": ["^@vitest/"],
+      "groupName": "Vitest",
+      "automerge": true,
+      "minimumReleaseAge": "3 days"
+    },
+    {
+      "description": "Group Hono packages",
+      "matchPackageNames": ["hono"],
+      "matchPackagePatterns": ["^@hono/"],
+      "groupName": "Hono",
+      "automerge": true,
+      "minimumReleaseAge": "3 days"
+    },
+    {
+      "description": "Group Testing Library packages",
+      "matchPackagePatterns": ["^@testing-library/"],
+      "groupName": "Testing Library",
+      "automerge": true,
+      "minimumReleaseAge": "3 days"
+    },
+    {
+      "description": "Pin GitHub Actions digests and update tags",
+      "matchManagers": ["github-actions"],
+      "pinDigests": true,
+      "automerge": true,
+      "minimumReleaseAge": "3 days"
+    },
+    {
+      "description": "Group devDependencies separately from dependencies",
+      "matchDepTypes": ["devDependencies"],
+      "matchUpdateTypes": ["patch"],
+      "automerge": true,
+      "automergeType": "pr",
+      "minimumReleaseAge": "1 day"
+    }
+  ],
+  "regexManagers": [
+    {
+      "description": "Update pnpm version in Dockerfile corepack command",
+      "fileMatch": ["^Dockerfile$"],
+      "matchStrings": [
+        "corepack prepare pnpm@(?<currentValue>.*?) --activate"
+      ],
+      "depNameTemplate": "pnpm",
+      "datasourceTemplate": "npm"
+    },
+    {
+      "description": "Update uv version in Dockerfile",
+      "fileMatch": ["^Dockerfile$"],
+      "matchStrings": [
+        "ARG UV_VERSION=(?<currentValue>.*?)\\n"
+      ],
+      "depNameTemplate": "astral-sh/uv",
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^(?<version>.*)$"
+    },
+    {
+      "description": "Update opencode version in Dockerfile",
+      "fileMatch": ["^Dockerfile$"],
+      "matchStrings": [
+        "ARG OPENCODE_VERSION=(?<currentValue>.*?)\\n"
+      ],
+      "depNameTemplate": "anomalyco/opencode",
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^(?<version>.*)$"
+    },
+    {
+      "description": "Update Bun installation URL in Dockerfile",
+      "fileMatch": ["^Dockerfile$"],
+      "matchStrings": [
+        "https://github\\.com/oven-sh/bun/releases/(?<currentValue>latest)/download/"
+      ],
+      "depNameTemplate": "oven-sh/bun",
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^(?<version>.*)$"
+    },
+    {
+      "description": "Track uv version in GitHub Actions",
+      "fileMatch": ["^\\.github/workflows/.*\\.yml$"],
+      "matchStrings": [
+        "UV_VERSION=\\$\\(git ls-remote.*?astral-sh/uv\\.git.*?\\)"
+      ],
+      "depNameTemplate": "astral-sh/uv",
+      "datasourceTemplate": "github-releases"
+    },
+    {
+      "description": "Track opencode version in GitHub Actions",
+      "fileMatch": ["^\\.github/workflows/.*\\.yml$"],
+      "matchStrings": [
+        "OPENCODE_VERSION=\\$\\(curl.*?anomalyco/opencode/releases/latest.*?\\)"
+      ],
+      "depNameTemplate": "anomalyco/opencode",
+      "datasourceTemplate": "github-releases"
+    }
+  ]
+}
