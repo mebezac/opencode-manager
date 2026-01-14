@@ -167,7 +167,7 @@ function CodeBlock({ children, className, ...props }: CodeBlockProps) {
 
   return (
     <div className="relative">
-      <pre className={`bg-accent p-1 rounded-lg overflow-x-auto whitespace-pre-wrap break-words border border-border my-4 ${className || ''}`} {...props}>
+      <pre className={`bg-accent p-3 md:p-4 pr-10 rounded-lg overflow-x-auto whitespace-pre-wrap break-words border border-border my-4 ${className || ''}`} {...props}>
         {children}
       </pre>
       <CopyButton content={codeContent} title="Copy code" className="absolute top-2 right-2" />
