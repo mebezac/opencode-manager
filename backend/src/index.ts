@@ -71,30 +71,99 @@ Prefer **pnpm** or **bun** over npm for installing dependencies to save disk spa
 - Use \`bun install\` as an alternative
 - Both are pre-installed in the container
 
- ### Python Packages
- Always create a virtual environment in the repository directory before installing packages:
+### Python Packages
+Always create a virtual environment in the repository directory before installing packages:
 
- 1. Create virtual environment in repo:
-   \`cd \`<repo_path>\`
-   \`uv venv .venv\`
+1. Create virtual environment in repo:
+  \`cd \`<repo_path>\`
+  \`uv venv .venv\`
 
- 2. Activate the virtual environment:
-   \`source .venv/bin/activate\`  # or \`uv pip sync\` for project-based workflows
+2. Activate the virtual environment:
+  \`source .venv/bin/activate\`  # or \`uv pip sync\` for project-based workflows
 
- 3. Install packages into activated environment:
-   \`uv pip install \`<package>\`
-   \`uv pip install -r requirements.txt\`
+3. Install packages into activated environment:
+  \`uv pip install \`<package>\`
+  \`uv pip install -r requirements.txt\`
 
- 4. Run Python commands:
-   \`python script.py\`  # Uses activated .venv
+4. Run Python commands:
+  \`python script.py\`  # Uses activated .venv
 
- Alternative: Use \`uv run python script.py\` to skip explicit activation
+Alternative: Use \`uv run python script.py\` to skip explicit activation
 
- **Important:**
- - Always create .venv in the repository directory (not workspace root)
- - Activate the environment before running pip operations
- - uv is pre-installed in the container and provides faster package installation
- - .venv directories created in repos will persist but can be removed safely
+**Important:**
+- Always create .venv in the repository directory (not workspace root)
+- Activate the environment before running pip operations
+- uv is pre-installed in the container and provides faster package installation
+- .venv directories created in repos will persist but can be removed safely
+
+## Tool Version Management with mise
+
+**mise** is pre-installed and configured in the container for managing multiple runtime versions:
+
+### Quick Start
+\`\`\`bash
+# Install a specific tool version
+mise use node@20
+mise use python@3.12
+mise use ruby@3.2
+
+# Install tools from .mise.toml or .tool-versions file
+mise install
+
+# List available tools
+mise ls-remote node
+mise ls-remote python
+
+# Execute command with specific tool version
+mise exec node@18 -- node script.js
+
+# Show current environment
+mise current
+\`\`\`
+
+### Key Features
+- Pre-configured and available in PATH
+- Automatically activated in shell sessions
+- Install any version of Node.js, Python, Ruby, Go, and 100+ other tools
+- Respects .tool-versions and .mise.toml files in repositories
+- Zero configuration required - just use \`mise use\` or \`mise install\`
+
+## GitHub CLI
+
+**gh** is pre-installed and **automatically authenticated** using your GitHub PAT from settings:
+
+### Authentication
+- GitHub CLI is pre-authenticated with your stored GitHub token
+- No need to run \`gh auth login\` - it's already configured
+- All \`gh\` commands will work immediately
+
+### Common Operations
+\`\`\`bash
+# Create pull requests
+gh pr create --title "Feature" --body "Description"
+
+# List and view PRs
+gh pr list
+gh pr view 123
+
+# Work with issues
+gh issue create --title "Bug report"
+gh issue list
+
+# Create releases
+gh release create v1.0.0 --title "Release" --notes "Changes"
+
+# Clone repositories (uses your authentication)
+gh repo clone owner/repo
+
+# View repository info
+gh repo view
+\`\`\`
+
+### Important Notes
+- Authentication is automatic - token is injected from your settings
+- Works seamlessly with private repositories
+- No manual token management needed
 
 ## General Guidelines
 

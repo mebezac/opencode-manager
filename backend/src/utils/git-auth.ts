@@ -184,3 +184,15 @@ export async function fetchGitHubUserInfo(token: string): Promise<GitHubUserInfo
     return null
   }
 }
+
+export function createGitHubCliEnv(credentials: GitCredential[]): Record<string, string> {
+  const githubCred = findGitHubCredential(credentials)
+  if (!githubCred) {
+    return {}
+  }
+  
+  return {
+    GH_TOKEN: githubCred.token,
+    GITHUB_TOKEN: githubCred.token
+  }
+}

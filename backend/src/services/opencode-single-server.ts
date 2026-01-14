@@ -1,7 +1,7 @@
 import { spawn, execSync } from 'child_process'
 import path from 'path'
 import { logger } from '../utils/logger'
-import { createGitEnv, createGitIdentityEnv, resolveGitIdentity } from '../utils/git-auth'
+import { createGitEnv, createGitIdentityEnv, resolveGitIdentity, createGitHubCliEnv } from '../utils/git-auth'
 import { SettingsService } from './settings'
 import { getWorkspacePath, getOpenCodeConfigFilePath, ENV } from '@opencode-manager/shared/config/env'
 import type { Database } from 'bun:sqlite'
@@ -114,6 +114,7 @@ class OpenCodeServerManager {
     logger.info(`OpenCode will use ?directory= parameter for session isolation`)
 
     const gitEnv = createGitEnv(gitCredentials)
+    const ghEnv = createGitHubCliEnv(gitCredentials)
 
     let stderrOutput = ''
 
@@ -127,6 +128,7 @@ class OpenCodeServerManager {
         env: {
           ...process.env,
           ...gitEnv,
+          ...ghEnv,
           ...gitIdentityEnv,
           XDG_DATA_HOME: path.join(OPENCODE_SERVER_DIRECTORY, '.opencode/state'),
           XDG_CONFIG_HOME: path.join(OPENCODE_SERVER_DIRECTORY, '.config'),

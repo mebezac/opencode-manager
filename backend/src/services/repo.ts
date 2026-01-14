@@ -5,7 +5,7 @@ import type { Database } from 'bun:sqlite'
 import type { Repo, CreateRepoInput } from '../types/repo'
 import { logger } from '../utils/logger'
 import { SettingsService } from './settings'
-import { createGitEnv, createNoPromptGitEnv, createGitHubGitEnv, isGitHubHttpsUrl } from '../utils/git-auth'
+import { createGitEnv, createNoPromptGitEnv, createGitHubGitEnv, isGitHubHttpsUrl, findGitHubCredential } from '../utils/git-auth'
 import { getReposPath } from '@opencode-manager/shared/config/env'
 import path from 'path'
 
@@ -27,13 +27,14 @@ interface GitCommandOptions {
   cwd?: string
   env?: Record<string, string>
   silent?: boolean
+  database?: Database
 }
 
 async function executeGitWithFallback(
   cmd: string[],
   options: GitCommandOptions = {}
 ): Promise<string> {
-  const { cwd, env = createNoPromptGitEnv(), silent } = options
+  const { cwd, env = createNoPromptGitEnv(), silent, database } = options
 
   try {
     return await executeCommand(cmd, { cwd, env, silent })
@@ -50,14 +51,18 @@ async function executeGitWithFallback(
     }
 
     try {
-      if (isGitHubHttpsUrl(url)) {
-        logger.warn(`Detected GitHub URL, trying gh auth token`)
-        const ghToken = (await executeCommand(['gh', 'auth', 'token'])).trim()
-        const ghEnv = createGitHubGitEnv(ghToken)
-        return await executeCommand(cmd, { cwd, env: ghEnv, silent })
+      if (isGitHubHttpsUrl(url) && database) {
+        logger.warn(`Detected GitHub URL, trying stored GitHub token`)
+        const settingsService = new SettingsService(database)
+        const settings = settingsService.getSettings('default')
+        const gitCredentials = settings.preferences.gitCredentials || []
+        const githubCred = findGitHubCredential(gitCredentials)
+        
+        if (githubCred) {
+          const ghEnv = createGitHubGitEnv(githubCred.token)
+          return await executeCommand(cmd, { cwd, env: ghEnv, silent })
+        }
       }
-
-
     } catch (cliError: any) {
       logger.warn(`CLI auth fallback failed:`, cliError.message)
     }
@@ -361,7 +366,7 @@ export async function cloneRepo(
       const baseRepoPath = path.resolve(getReposPath(), baseRepoDirName)
       const worktreePath = path.resolve(getReposPath(), worktreeDirName)
       
-       await executeGitWithFallback(['git', '-C', baseRepoPath, 'fetch', '--all'], { cwd: getReposPath(), env })
+       await executeGitWithFallback(['git', '-C', baseRepoPath, 'fetch', '--all'], { cwd: getReposPath(), env, database })
 
       
       await createWorktreeSafely(baseRepoPath, worktreePath, branch)
@@ -395,7 +400,7 @@ export async function cloneRepo(
       }
       
       try {
-        await executeGitWithFallback(['git', 'clone', '-b', branch, normalizedRepoUrl, worktreeDirName], { cwd: getReposPath(), env })
+        await executeGitWithFallback(['git', 'clone', '-b', branch, normalizedRepoUrl, worktreeDirName], { cwd: getReposPath(), env, database })
       } catch (error: any) {
         if (error.message.includes('destination path') && error.message.includes('already exists')) {
           logger.error(`Clone failed: directory still exists after cleanup attempt`)
@@ -427,7 +432,7 @@ export async function cloneRepo(
           
           if (branch) {
             logger.info(`Switching to branch: ${branch}`)
-             await executeGitWithFallback(['git', '-C', path.resolve(getReposPath(), baseRepoDirName), 'fetch', '--all'], { cwd: getReposPath(), env })
+             await executeGitWithFallback(['git', '-C', path.resolve(getReposPath(), baseRepoDirName), 'fetch', '--all'], { cwd: getReposPath(), env, database })
 
             
             let remoteBranchExists = false
@@ -488,7 +493,7 @@ export async function cloneRepo(
           ? ['git', 'clone', '-b', branch, normalizedRepoUrl, worktreeDirName]
           : ['git', 'clone', normalizedRepoUrl, worktreeDirName]
         
-        await executeGitWithFallback(cloneCmd, { cwd: getReposPath(), env })
+        await executeGitWithFallback(cloneCmd, { cwd: getReposPath(), env, database })
       } catch (error: any) {
         if (error.message.includes('destination path') && error.message.includes('already exists')) {
           logger.error(`Clone failed: directory still exists after cleanup attempt`)
@@ -497,7 +502,7 @@ export async function cloneRepo(
         
         if (branch && (error.message.includes('Remote branch') || error.message.includes('not found'))) {
           logger.info(`Branch '${branch}' not found, cloning default branch and creating branch locally`)
-          await executeGitWithFallback(['git', 'clone', normalizedRepoUrl, worktreeDirName], { cwd: getReposPath(), env })
+        await executeGitWithFallback(['git', 'clone', normalizedRepoUrl, worktreeDirName], { cwd: getReposPath(), env, database })
           let localBranchExists = 'missing'
           try {
             await executeCommand(['git', '-C', path.resolve(getReposPath(), worktreeDirName), 'rev-parse', '--verify', `refs/heads/${branch}`])
@@ -540,7 +545,7 @@ export async function listBranches(database: Database, repo: Repo): Promise<{ lo
 
     if (!repo.isLocal) {
       try {
-        await executeGitWithFallback(['git', '-C', repoPath, 'fetch', '--all'], { env })
+        await executeGitWithFallback(['git', '-C', repoPath, 'fetch', '--all'], { env, database })
       } catch (error) {
         logger.warn(`Failed to fetch remote for repo ${repo.id}, using cached branch info:`, error)
       }
@@ -594,7 +599,7 @@ export async function switchBranch(database: Database, repoId: number, branch: s
 
     logger.info(`Switching to branch: ${sanitizedBranch} in ${repo.localPath}`)
 
-    await executeGitWithFallback(['git', '-C', repoPath, 'fetch', '--all'], { env })
+    await executeGitWithFallback(['git', '-C', repoPath, 'fetch', '--all'], { env, database })
     
     await checkoutBranchSafely(repoPath, sanitizedBranch)
     
