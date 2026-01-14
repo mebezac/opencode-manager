@@ -28,6 +28,18 @@ RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | d
 
 RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
 
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+ENV MISE_DATA_DIR="/usr/local/share/mise"
+ENV MISE_CONFIG_DIR="/usr/local/share/mise"
+ENV MISE_CACHE_DIR="/usr/local/share/mise/cache"
+ENV MISE_INSTALL_PATH="/usr/local/bin/mise"
+ENV PATH="/usr/local/share/mise/shims:$PATH"
+
+RUN curl https://mise.run | sh && \
+    mkdir -p /usr/local/share/mise && \
+    echo 'eval "$(mise activate bash)"' >> /etc/bash.bashrc && \
+    mise --version
+
 ARG BUN_VARIANT=""
 RUN apt-get update && apt-get install -y unzip && rm -rf /var/lib/apt/lists/* && \
     ARCH=$(dpkg --print-architecture) && \
