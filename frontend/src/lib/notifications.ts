@@ -62,12 +62,10 @@ class NotificationService {
     const permission = await this.checkPermissionStatus()
 
     if (permission !== 'granted') {
-      console.warn('Notification permission not granted')
       return
     }
 
     if (!this.isSupported()) {
-      console.warn('Notifications not supported')
       return
     }
 
@@ -79,7 +77,6 @@ class NotificationService {
       requireInteraction: options.requireInteraction ?? true,
       silent: options.silent ?? false,
       data: options.data,
-      timestamp: Date.now(),
     }
 
     if (this.serviceWorkerRegistration) {
