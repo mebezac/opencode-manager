@@ -210,7 +210,7 @@ importers:
         specifier: ^14.6.1
         version: 14.6.1(@testing-library/dom@10.4.1)
       '@types/node':
-        specifier: ^24.10.7
+        specifier: ^24.10.8
         version: 24.10.9
       '@types/react':
         specifier: ^19.2.8
