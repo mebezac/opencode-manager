@@ -272,14 +272,14 @@ importers:
       zod:
         specifier: ^4.1.12
         version: 4.3.2
-    optionalDependencies:
-      dotenv:
-        specifier: ^17.2.3
-        version: 17.2.3
     devDependencies:
       typescript:
         specifier: ^5
         version: 5.9.3
+    optionalDependencies:
+      dotenv:
+        specifier: ^17.2.3
+        version: 17.2.3
 
 packages:
 
