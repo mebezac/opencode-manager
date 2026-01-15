@@ -16,7 +16,7 @@
     "./config/client": "./src/config/client.ts"
   },
   "dependencies": {
-    "zod": "^4.1.12"
+    "zod": "^4.3.5"
   },
   "optionalDependencies": {
     "dotenv": "^17.2.3"

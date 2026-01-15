@@ -46,7 +46,7 @@ importers:
         specifier: ^5
         version: 5.9.3
       zod:
-        specifier: ^4.1.12
+        specifier: ^4.3.5
         version: 4.3.5
     devDependencies:
       '@eslint/js':
@@ -191,7 +191,7 @@ importers:
         specifier: ^3.4.0
         version: 3.4.0
       zod:
-        specifier: ^4.1.12
+        specifier: ^4.3.5
         version: 4.3.5
       zustand:
         specifier: ^5.0.10
@@ -270,7 +270,7 @@ importers:
   shared:
     dependencies:
       zod:
-        specifier: ^4.1.12
+        specifier: ^4.3.5
         version: 4.3.5
     devDependencies:
       typescript:
