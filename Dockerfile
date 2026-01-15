@@ -92,11 +92,11 @@ RUN pnpm --filter frontend build
 
 FROM base AS runner
 
-ARG UV_VERSION=latest
-ARG OPENCODE_VERSION=latest
+ARG UV_VERSION=0.9.24
+ARG OPENCODE_VERSION=1.1.19
 
 RUN echo "Installing uv=${UV_VERSION} opencode=${OPENCODE_VERSION}" && \
-    curl -LsSf https://astral.sh/uv/install.sh | UV_NO_MODIFY_PATH=1 sh && \
+    curl -LsSf https://astral.sh/uv/${UV_VERSION}/install.sh | UV_NO_MODIFY_PATH=1 sh && \
     mv /root/.local/bin/uv /usr/local/bin/uv && \
     mv /root/.local/bin/uvx /usr/local/bin/uvx && \
     chmod +x /usr/local/bin/uv /usr/local/bin/uvx && \
