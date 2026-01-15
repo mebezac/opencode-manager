@@ -9,6 +9,7 @@ import { showToast } from '@/lib/toast'
 import { subscribeToSSE } from '@/lib/sseManager'
 import { OPENCODE_API_ENDPOINT } from '@/config'
 import { addToSessionKeyedState, removeFromSessionKeyedState } from '@/lib/sessionKeyedState'
+import { showNotification, getNotificationPermissionStatus } from '@/lib/notifications'
 
 type PermissionsBySession = Record<string, PermissionRequest[]>
 type QuestionsBySession = Record<string, QuestionRequest[]>
@@ -51,6 +52,7 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
 
   const clientsRef = useRef<Map<string, OpenCodeClient>>(new Map())
   const prevPermissionCountRef = useRef(0)
+  const prevQuestionCountRef = useRef(0)
   const MAX_CACHED_CLIENTS = 50
 
   useEffect(() => {
@@ -150,9 +152,37 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
           onClick: () => setShowPermissionDialog(true),
         },
       })
+
+      getNotificationPermissionStatus().then(status => {
+        if (status === 'granted') {
+          showNotification({
+            title: 'Permission Needed',
+            body: `${permissionCount} pending permission${permissionCount > 1 ? 's' : ''} require${permissionCount > 1 ? '' : 's'} your attention`,
+            tag: 'pending-permissions',
+            requireInteraction: true,
+          }).catch(console.error)
+        }
+      })
     }
     prevPermissionCountRef.current = permissionCount
   }, [allPermissions.length, showPermissionDialog])
+
+  useEffect(() => {
+    const questionCount = allQuestions.length
+    if (questionCount > prevQuestionCountRef.current && questionCount > 0) {
+      getNotificationPermissionStatus().then(status => {
+        if (status === 'granted') {
+          showNotification({
+            title: 'Question from Agent',
+            body: `The AI agent has ${questionCount} question${questionCount > 1 ? 's' : ''} for you`,
+            tag: 'pending-questions',
+            requireInteraction: true,
+          }).catch(console.error)
+        }
+      })
+    }
+    prevQuestionCountRef.current = questionCount
+  }, [allQuestions.length])
 
   const respondToPermission = useCallback(async (permissionID: string, sessionID: string, response: PermissionResponse) => {
     const client = getClient(sessionID)

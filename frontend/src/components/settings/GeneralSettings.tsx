@@ -4,6 +4,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { TTSSettings } from './TTSSettings'
+import { NotificationSettings } from '@/components/notifications/NotificationSettings'
 
 export function GeneralSettings() {
   const { preferences, isLoading, updateSettings, isUpdating } = useSettings()
@@ -126,6 +127,11 @@ export function GeneralSettings() {
 
       <div className="mt-6">
         <TTSSettings />
+      </div>
+
+      <div className="mt-6 pt-6 border-t border-border">
+        <h3 className="text-base font-semibold text-foreground mb-4">Notifications</h3>
+        <NotificationSettings />
       </div>
     </div>
   )
