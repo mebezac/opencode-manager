@@ -3,8 +3,11 @@
   "version": "0.6.2",
   "private": true,
   "type": "module",
-  "packageManager": "pnpm@9.15.0",
-"scripts": {
+  "packageManager": "pnpm@10.28.0",
+  "pnpm": {
+    "onlyBuiltDependencies": []
+  },
+  "scripts": {
     "predev": "bash scripts/setup-dev.sh",
     "dev": "concurrently \"pnpm:dev:backend\" \"pnpm:dev:frontend\"",
     "dev:backend": "bun --watch backend/src/index.ts",
