@@ -1,5 +1,4 @@
 import { useRegisterSW } from 'virtual:pwa-register/react'
-import { useEffect } from 'react'
 import { notificationService } from '@/lib/notifications'
 
 export function usePWA() {
@@ -8,22 +7,12 @@ export function usePWA() {
     needRefresh: [needRefresh, setNeedRefresh],
     updateServiceWorker,
   } = useRegisterSW({
-    onRegisteredSW(swUrl, registration) {
-      console.log('Service Worker registered:', swUrl)
+    onRegisteredSW(_swUrl: string, registration: ServiceWorkerRegistration | undefined) {
       if (registration) {
         notificationService.setServiceWorkerRegistration(registration)
       }
     },
-    onRegisterError(error) {
-      console.error('Service Worker registration error:', error)
-    },
   })
-
-  useEffect(() => {
-    if (offlineReady) {
-      console.log('App is ready to work offline')
-    }
-  }, [offlineReady])
 
   const closePrompt = () => {
     setOfflineReady(false)
