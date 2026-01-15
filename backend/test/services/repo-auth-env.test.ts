@@ -26,16 +26,16 @@ vi.mock('../../src/db/queries', () => ({
 }))
 
 vi.mock('../../src/services/settings', () => ({
-  SettingsService: vi.fn().mockImplementation(() => ({
-    getSettings: () => ({
+  SettingsService: vi.fn().mockImplementation(function() {
+    this.getSettings = () => ({
       preferences: {
         gitCredentials: [
           { name: 'GitHub', host: 'https://github.com/', token: 'ghp_test_token' }
         ],
       },
       updatedAt: Date.now(),
-    }),
-  })),
+    })
+  }),
 }))
 
 describe('repoService.cloneRepo auth env', () => {
