@@ -43,7 +43,7 @@ importers:
         specifier: ^5.0.3
         version: 5.0.3
       typescript:
-        specifier: ^5
+        specifier: ^5.9.3
         version: 5.9.3
       zod:
         specifier: ^4.1.12
@@ -210,13 +210,13 @@ importers:
         specifier: ^14.6.1
         version: 14.6.1(@testing-library/dom@10.4.1)
       '@types/node':
-        specifier: ^24.8.1
+        specifier: ^24.10.7
         version: 24.10.9
       '@types/react':
-        specifier: ^19.2.2
+        specifier: ^19.2.8
         version: 19.2.8
       '@types/react-dom':
-        specifier: ^19.2.2
+        specifier: ^19.2.3
         version: 19.2.3(@types/react@19.2.8)
       '@vitejs/plugin-react':
         specifier: ^5.0.4
@@ -274,7 +274,7 @@ importers:
         version: 4.3.5
     devDependencies:
       typescript:
-        specifier: ^5
+        specifier: ^5.9.3
         version: 5.9.3
     optionalDependencies:
       dotenv:
