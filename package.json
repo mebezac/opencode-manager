@@ -32,7 +32,7 @@
     "docker:restart": "docker-compose restart"
   },
   "devDependencies": {
-    "concurrently": "^9.1.0"
+    "concurrently": "^9.2.1"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",
