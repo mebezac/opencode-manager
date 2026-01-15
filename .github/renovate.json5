@@ -11,6 +11,8 @@
   labels: [
     'dependencies',
   ],
+  reviewers: [],
+  assignees: [],
   semanticCommits: 'enabled',
   rangeStrategy: 'bump',
   separateMajorMinor: true,
