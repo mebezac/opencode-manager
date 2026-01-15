@@ -157,7 +157,7 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
         if (status === 'granted') {
           showNotification({
             title: 'Permission Needed',
-            body: `${permissionCount} pending permission${permissionCount > 1 ? 's' : ''} require${permissionCount === 1 ? 's' : ''} your attention`,
+            body: `${permissionCount} pending permission${permissionCount > 1 ? 's' : ''} require${permissionCount > 1 ? '' : 's'} your attention`,
             tag: 'pending-permissions',
             requireInteraction: true,
           }).catch(console.error)

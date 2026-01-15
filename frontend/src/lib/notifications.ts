@@ -54,7 +54,7 @@ class NotificationService {
     return permission
   }
 
-  async setServiceWorkerRegistration(registration: ServiceWorkerRegistration): Promise<void> {
+  setServiceWorkerRegistration(registration: ServiceWorkerRegistration): void {
     this.serviceWorkerRegistration = registration
   }
 
