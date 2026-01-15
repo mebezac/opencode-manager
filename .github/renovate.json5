@@ -13,6 +13,10 @@
   ],
   reviewers: [],
   assignees: [],
+  lockFileMaintenance: {
+    enabled: true,
+    schedule: ['before 5am on Monday'],
+  },
   semanticCommits: 'enabled',
   rangeStrategy: 'bump',
   separateMajorMinor: true,
