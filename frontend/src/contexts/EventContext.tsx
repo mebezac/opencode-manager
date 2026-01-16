@@ -161,6 +161,19 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
             tag: 'pending-permissions',
             requireInteraction: true,
           }).catch(console.error)
+          
+          fetch('/api/push/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              title: 'Permission Needed',
+              body: `${permissionCount} pending permission${permissionCount > 1 ? 's' : ''} require${permissionCount > 1 ? '' : 's'} your attention`,
+              tag: 'pending-permissions',
+              icon: '/icon-192.png',
+              badge: '/icon-192.png',
+              data: { url: '/' },
+            }),
+          }).catch(console.error)
         }
       })
     }
@@ -177,6 +190,19 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
             body: `The AI agent has ${questionCount} question${questionCount > 1 ? 's' : ''} for you`,
             tag: 'pending-questions',
             requireInteraction: true,
+          }).catch(console.error)
+          
+          fetch('/api/push/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              title: 'Question from Agent',
+              body: `The AI agent has ${questionCount} question${questionCount > 1 ? 's' : ''} for you`,
+              tag: 'pending-questions',
+              icon: '/icon-192.png',
+              badge: '/icon-192.png',
+              data: { url: '/' },
+            }),
           }).catch(console.error)
         }
       })
