@@ -1,22 +1,12 @@
-import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching'
-import { clientsClaim } from 'workbox-core'
-
-declare let self: ServiceWorkerGlobalScope
-
-self.skipWaiting()
-clientsClaim()
-
-precacheAndRoute(self.__WB_MANIFEST)
-cleanupOutdatedCaches()
-
-self.addEventListener('push', (event: PushEvent) => {
+/* eslint-env serviceworker */
+self.addEventListener('push', (event) => {
   if (!event.data) {
     return
   }
 
   const data = event.data.json()
   const title = data.title || 'OpenCode Manager'
-  const options: NotificationOptions = {
+  const options = {
     body: data.body,
     icon: data.icon || '/icon-192.png',
     badge: data.badge || '/icon-192.png',
@@ -30,7 +20,7 @@ self.addEventListener('push', (event: PushEvent) => {
   )
 })
 
-self.addEventListener('notificationclick', (event: NotificationEvent) => {
+self.addEventListener('notificationclick', (event) => {
   event.notification.close()
 
   const urlToOpen = event.notification.data?.url || '/'
