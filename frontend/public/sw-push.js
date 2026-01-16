@@ -1,4 +1,4 @@
-/* eslint-env serviceworker */
+/* global self */
 self.addEventListener('push', (event) => {
   if (!event.data) {
     return
