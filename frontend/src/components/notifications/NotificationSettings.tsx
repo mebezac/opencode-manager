@@ -7,12 +7,14 @@ import {
   notificationService,
   type NotificationPermissionStatus,
 } from '@/lib/notifications'
+import { subscribeToPushNotifications, unsubscribeFromPushNotifications, getPushSubscription } from '@/lib/push'
 import { showToast } from '@/lib/toast'
 
 export function NotificationSettings() {
   const [permission, setPermission] = useState<NotificationPermissionStatus>('default')
   const [isSupported, setIsSupported] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [isPushSubscribed, setIsPushSubscribed] = useState(false)
 
   useEffect(() => {
     const checkSupport = notificationService.isSupported()
@@ -21,14 +23,27 @@ export function NotificationSettings() {
     const checkPermission = async () => {
       const status = await notificationService.checkPermissionStatus()
       setPermission(status)
+      
+      const subscription = await getPushSubscription()
+      setIsPushSubscribed(!!subscription)
     }
 
     checkPermission()
   }, [])
 
   const handleToggleNotifications = async () => {
-    if (permission === 'granted') {
-      showToast.info('To disable notifications, use your browser settings')
+    if (permission === 'granted' && isPushSubscribed) {
+      setIsLoading(true)
+      try {
+        await unsubscribeFromPushNotifications()
+        setIsPushSubscribed(false)
+        showToast.success('Push notifications disabled')
+      } catch (error) {
+        console.error('Error unsubscribing:', error)
+        showToast.error('Failed to unsubscribe from push notifications')
+      } finally {
+        setIsLoading(false)
+      }
       return
     }
 
@@ -39,11 +54,13 @@ export function NotificationSettings() {
 
     setIsLoading(true)
     try {
-      const result = await notificationService.requestPermission()
-      setPermission(result)
+      const subscription = await subscribeToPushNotifications()
+      const status = await notificationService.checkPermissionStatus()
+      setPermission(status)
+      setIsPushSubscribed(!!subscription)
       
-      if (result === 'granted') {
-        showToast.success('Notifications enabled')
+      if (status === 'granted' && subscription) {
+        showToast.success('Push notifications enabled')
         await notificationService.showNotification({
           title: 'Notifications Enabled',
           body: 'You will receive notifications when input is needed',
@@ -54,7 +71,7 @@ export function NotificationSettings() {
       }
     } catch (error) {
       console.error('Error toggling notifications:', error)
-      showToast.error('Failed to change notification settings')
+      showToast.error('Failed to enable push notifications')
     } finally {
       setIsLoading(false)
     }
@@ -106,7 +123,7 @@ export function NotificationSettings() {
         </div>
         <Switch
           id="notifications"
-          checked={permission === 'granted'}
+          checked={permission === 'granted' && isPushSubscribed}
           onCheckedChange={handleToggleNotifications}
           disabled={isLoading || permission === 'denied'}
         />

@@ -135,6 +135,8 @@ export function runMigrations(db: Database): void {
     
     migrateGitTokenToCredentials(db)
     
+    migratePushSubscriptions(db)
+    
     logger.info('Database migrations completed successfully')
   } catch (error) {
     logger.error('Failed to run database migrations:', error)
@@ -183,5 +185,32 @@ function migrateGitTokenToCredentials(db: Database): void {
     }
   } catch (error) {
     logger.error('Failed to migrate gitToken to gitCredentials:', error)
+  }
+}
+
+function migratePushSubscriptions(db: Database): void {
+  try {
+    const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='push_subscriptions'").all()
+    
+    if (tables.length === 0) {
+      logger.info('Creating push_subscriptions table')
+      db.run(`
+        CREATE TABLE push_subscriptions (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id TEXT NOT NULL DEFAULT 'default',
+          endpoint TEXT NOT NULL,
+          p256dh TEXT NOT NULL,
+          auth TEXT NOT NULL,
+          created_at INTEGER NOT NULL,
+          last_used INTEGER,
+          UNIQUE(endpoint)
+        )
+      `)
+      
+      db.run('CREATE INDEX IF NOT EXISTS idx_push_user_id ON push_subscriptions(user_id)')
+      logger.info('Successfully created push_subscriptions table')
+    }
+  } catch (error) {
+    logger.error('Failed to create push_subscriptions table:', error)
   }
 }
