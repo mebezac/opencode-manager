@@ -424,6 +424,15 @@ export const PromptInput = forwardRef<PromptInputHandle, PromptInputProps>(funct
 
     if (isIOS && isSecureContext && navigator.clipboard && navigator.clipboard.read) {
       try {
+        const text = await navigator.clipboard.readText()
+        if (text && text.trim()) {
+          return
+        }
+      } catch (err) {
+      }
+      
+      event.preventDefault()
+      try {
         const clipboardItems = await navigator.clipboard.read()
         let hasImageContent = false
         
