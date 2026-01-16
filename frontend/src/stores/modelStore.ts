@@ -9,6 +9,7 @@ export interface ModelSelection {
 interface ModelStore {
   model: ModelSelection | null
   recentModels: ModelSelection[]
+  favoriteModels: ModelSelection[]
   variants: Record<string, string | undefined>
   isInitialized: boolean
 
@@ -18,6 +19,8 @@ interface ModelStore {
   setVariant: (model: ModelSelection, variant: string | undefined) => void
   getVariant: (model: ModelSelection) => string | undefined
   clearVariant: (model: ModelSelection) => void
+  toggleFavorite: (model: ModelSelection) => void
+  isFavorite: (model: ModelSelection) => boolean
 }
 
 const MAX_RECENT_MODELS = 10
@@ -34,6 +37,7 @@ export const useModelStore = create<ModelStore>()(
     (set, get) => ({
       model: null,
       recentModels: [],
+      favoriteModels: [],
       variants: {},
       isInitialized: false,
 
@@ -101,12 +105,39 @@ export const useModelStore = create<ModelStore>()(
           }
         })
       },
+
+      toggleFavorite: (model: ModelSelection) => {
+        set((state) => {
+          const isFav = state.favoriteModels.some(
+            (m) => m.providerID === model.providerID && m.modelID === model.modelID
+          )
+          if (isFav) {
+            return {
+              favoriteModels: state.favoriteModels.filter(
+                (m) => !(m.providerID === model.providerID && m.modelID === model.modelID)
+              ),
+            }
+          } else {
+            return {
+              favoriteModels: [...state.favoriteModels, model],
+            }
+          }
+        })
+      },
+
+      isFavorite: (model: ModelSelection) => {
+        const state = get()
+        return state.favoriteModels.some(
+          (m) => m.providerID === model.providerID && m.modelID === model.modelID
+        )
+      },
     }),
     {
       name: 'opencode-model-selection',
       partialize: (state) => ({
         model: state.model,
         recentModels: state.recentModels,
+        favoriteModels: state.favoriteModels,
         variants: state.variants,
       }),
     }

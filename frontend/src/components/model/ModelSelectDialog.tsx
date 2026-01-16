@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Search, Check, Star } from "lucide-react";
+import { Loader2, Search, Check, Star, StarOff } from "lucide-react";
 import {
   getProvidersWithModels,
   formatModelName,
@@ -69,14 +69,18 @@ interface ModelCardProps {
   provider: ProviderWithModels;
   modelKey: string;
   isSelected: boolean;
+  isFavorite: boolean;
   onSelect: (providerId: string, modelId: string) => void;
+  onToggleFavorite: (providerId: string, modelId: string) => void;
 }
 
-const ModelCard = memo(function ModelCard({ 
-  model, 
-  provider, 
-  isSelected, 
-  onSelect 
+const ModelCard = memo(function ModelCard({
+  model,
+  provider,
+  isSelected,
+  isFavorite,
+  onSelect,
+  onToggleFavorite
 }: ModelCardProps) {
   const capabilities = useMemo(() => {
     const caps = [];
@@ -108,6 +112,19 @@ const ModelCard = memo(function ModelCard({
             <h4 className="font-semibold text-sm truncate">
               {formatModelName(model)}
             </h4>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleFavorite(provider.id, model.id);
+              }}
+              className="flex-shrink-0 p-0.5 hover:bg-accent rounded-sm transition-colors"
+            >
+              {isFavorite ? (
+                <Star className="h-3.5 w-3.5 text-yellow-500 fill-current" />
+              ) : (
+                <StarOff className="h-3.5 w-3.5 text-muted-foreground hover:text-yellow-500" />
+              )}
+            </button>
           </div>
           <p className="text-xs text-muted-foreground truncate">
             {formatProviderName(provider)}
@@ -166,18 +183,24 @@ interface ModelGridProps {
   models: FlatModel[];
   currentModel: string;
   onSelect: (providerId: string, modelId: string) => void;
+  onToggleFavorite: (providerId: string, modelId: string) => void;
   loading: boolean;
   recentModels?: FlatModel[];
+  favoriteModels?: FlatModel[];
   showRecent?: boolean;
+  showFavorites?: boolean;
 }
 
-const ModelGrid = memo(function ModelGrid({ 
-  models, 
-  currentModel, 
-  onSelect, 
+const ModelGrid = memo(function ModelGrid({
+  models,
+  currentModel,
+  onSelect,
+  onToggleFavorite,
   loading,
   recentModels = [],
+  favoriteModels = [],
   showRecent = false,
+  showFavorites = false,
 }: ModelGridProps) {
   if (loading) {
     return (
@@ -197,6 +220,29 @@ const ModelGrid = memo(function ModelGrid({
 
   return (
     <div className="space-y-6">
+      {showFavorites && favoriteModels.length > 0 && (
+        <div>
+          <h3 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-1.5">
+            <Star className="h-3.5 w-3.5 text-yellow-500" />
+            Favorite Models
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+            {favoriteModels.map(({ model, provider, modelKey }) => (
+              <ModelCard
+                key={`favorite-${modelKey}`}
+                model={model}
+                provider={provider}
+                modelKey={modelKey}
+                isSelected={currentModel === modelKey}
+                isFavorite={true}
+                onSelect={onSelect}
+                onToggleFavorite={onToggleFavorite}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
       {showRecent && recentModels.length > 0 && (
         <div>
           <h3 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-1.5">
@@ -211,7 +257,9 @@ const ModelGrid = memo(function ModelGrid({
                 provider={provider}
                 modelKey={modelKey}
                 isSelected={currentModel === modelKey}
+                isFavorite={false}
                 onSelect={onSelect}
+                onToggleFavorite={onToggleFavorite}
               />
             ))}
           </div>
@@ -220,22 +268,27 @@ const ModelGrid = memo(function ModelGrid({
 
       {models.length > 0 && (
         <div>
-          {showRecent && recentModels.length > 0 && (
+          {(showRecent && recentModels.length > 0) || (showFavorites && favoriteModels.length > 0) ? (
             <h3 className="text-sm font-semibold text-muted-foreground mb-3">
               All Models
             </h3>
-          )}
+          ) : null}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
-            {models.map(({ model, provider, modelKey }) => (
-              <ModelCard
-                key={modelKey}
-                model={model}
-                provider={provider}
-                modelKey={modelKey}
-                isSelected={currentModel === modelKey}
-                onSelect={onSelect}
-              />
-            ))}
+            {models.map(({ model, provider, modelKey }) => {
+              const isFav = favoriteModels.some(fm => fm.modelKey === modelKey);
+              return (
+                <ModelCard
+                  key={modelKey}
+                  model={model}
+                  provider={provider}
+                  modelKey={modelKey}
+                  isSelected={currentModel === modelKey}
+                  isFavorite={isFav}
+                  onSelect={onSelect}
+                  onToggleFavorite={onToggleFavorite}
+                />
+              );
+            })}
           </div>
         </div>
       )}
@@ -295,7 +348,7 @@ export function ModelSelectDialog({
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedProvider, setSelectedProvider] = useState<string>("");
 
-  const { modelString, setModel, recentModels } = useModelSelection(opcodeUrl, directory);
+  const { modelString, setModel, recentModels, favoriteModels, toggleFavorite } = useModelSelection(opcodeUrl, directory);
   const currentModel = modelString || "";
 
   const { data: allProviders = [], isLoading: loading } = useQuery({
@@ -335,6 +388,15 @@ export function ModelSelectDialog({
       .filter((fm): fm is FlatModel => fm !== undefined)
       .slice(0, 6);
   }, [recentModels, flatModels]);
+
+  const favoriteFlatModels = useMemo((): FlatModel[] => {
+    return favoriteModels
+      .map((favorite) => {
+        const modelKey = `${favorite.providerID}/${favorite.modelID}`;
+        return flatModels.find((fm) => fm.modelKey === modelKey);
+      })
+      .filter((fm): fm is FlatModel => fm !== undefined);
+  }, [favoriteModels, flatModels]);
 
   const filteredModels = useMemo(() => {
     const search = searchQuery.toLowerCase();
@@ -419,9 +481,12 @@ export function ModelSelectDialog({
                 models={filteredModels}
                 currentModel={currentModel}
                 onSelect={handleModelSelect}
+                onToggleFavorite={(providerId, modelId) => toggleFavorite({ providerID: providerId, modelID: modelId })}
                 loading={loading}
                 recentModels={recentFlatModels}
+                favoriteModels={favoriteFlatModels}
                 showRecent={!selectedProvider && !searchQuery}
+                showFavorites={!selectedProvider && !searchQuery && favoriteFlatModels.length > 0}
               />
             </div>
 
