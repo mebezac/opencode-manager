@@ -7,7 +7,6 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { ScrollArea } from '@/components/ui/scroll-area'
 
 interface PodStatus {
   name: string
@@ -247,8 +246,8 @@ export function KubernetesSettings() {
                   No pods found. Create pods to test your code in isolated environments.
                 </div>
               ) : (
-                <ScrollArea className="h-[300px] rounded-md border border-border">
-                  <div className="p-4 space-y-3">
+                 <div className="h-[300px] rounded-md border border-border overflow-y-auto">
+                   <div className="p-4 space-y-3">
                     {pods.map((pod) => (
                       <Card key={`${pod.namespace}-${pod.name}`} className="border-border">
                         <CardContent className="p-4">
@@ -309,9 +308,9 @@ export function KubernetesSettings() {
                         </CardContent>
                       </Card>
                     ))}
-                  </div>
-                </ScrollArea>
-              )}
+                   </div>
+                 </div>
+               )}
             </div>
 
             <div className="flex gap-4 pt-4">
