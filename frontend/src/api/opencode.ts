@@ -23,7 +23,7 @@ export class OpenCodeClient {
     this.directory = directory
     this.client = axios.create({
       baseURL,
-      timeout: 30000
+      timeout: 300000
     })
     
     this.client.interceptors.request.use((config) => {
