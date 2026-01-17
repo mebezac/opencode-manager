@@ -27,6 +27,7 @@ import { useAutoScroll } from "@/hooks/useAutoScroll";
 import { useSwipeBack } from "@/hooks/useMobile";
 import { useTTS } from "@/hooks/useTTS";
 import { useEffect, useRef, useCallback, useMemo } from "react";
+import { useKeyboardVisibility } from "@/hooks/useKeyboardVisibility";
 import { MessageSkeleton } from "@/components/message/MessageSkeleton";
 import { exportSession, downloadMarkdown } from "@/lib/exportSession";
 import { showToast } from "@/lib/toast";
@@ -59,6 +60,8 @@ export function SessionDetail() {
   const [selectedFilePath, setSelectedFilePath] = useState<string | undefined>();
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [hasPromptContent, setHasPromptContent] = useState(false);
+  
+  const { isKeyboardVisible, keyboardHeight } = useKeyboardVisibility();
   
   const handleSwipeBack = useCallback(() => {
     navigate(`/repos/${repoId}`);
@@ -414,7 +417,12 @@ export function SessionDetail() {
       </Header>
 
       <div className="flex-1 overflow-hidden flex flex-col relative">
-        <div key={sessionId} ref={messageContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden pb-28 overscroll-contain [mask-image:linear-gradient(to_bottom,transparent,black_16px,black)]">
+        <div 
+          key={sessionId} 
+          ref={messageContainerRef} 
+          className={`flex-1 overflow-y-auto overflow-x-hidden overscroll-contain [mask-image:linear-gradient(to_bottom,transparent,black_16px,black)] ${isKeyboardVisible ? 'pb-[calc(28px+env(safe-area-inset-bottom,0px))]' : 'pb-28'}`}
+          style={isKeyboardVisible ? { paddingBottom: `calc(28px + ${keyboardHeight}px)` } : undefined}
+        >
           {repoLoading || sessionLoading || messagesLoading ? (
             <MessageSkeleton />
           ) : opcodeUrl && repoDirectory ? (
@@ -431,7 +439,7 @@ export function SessionDetail() {
           ) : null}
         </div>
         {opcodeUrl && repoDirectory && !isEditingMessage && (
-          <div className="absolute bottom-0 left-0 right-0 flex justify-center">
+          <div className={`absolute bottom-0 left-0 right-0 flex justify-center transition-all duration-300 ${isKeyboardVisible ? 'pb-[env(safe-area-inset-bottom,0px)]' : ''}`}>
             <div className="relative w-[94%] md:max-w-4xl">
               {hasPromptContent && (
                 <button

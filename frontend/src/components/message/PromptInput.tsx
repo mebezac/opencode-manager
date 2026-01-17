@@ -680,7 +680,6 @@ export const PromptInput = forwardRef<PromptInputHandle, PromptInputProps>(funct
   }
 
   const lastAssistantMessage = messages?.filter(msg => msg.info.role === 'assistant').at(-1)
-  const hasIncompleteMessages = lastAssistantMessage ? isMessageIncomplete(lastAssistantMessage) : false
 
   const currentMode = preferences?.mode || 'build'
   const modeColor = currentMode === 'plan' ? 'text-yellow-600 dark:text-yellow-500' : 'text-green-600 dark:text-green-500'
@@ -696,9 +695,19 @@ const { model, modelString } = useModelSelection(opcodeUrl, directory)
   const { hasVariants, currentVariant, cycleVariant } = useVariants(opcodeUrl, directory)
   const sessionStatus = useSessionStatusForSession(sessionID)
   const isSessionActive = sessionStatus.type === 'busy' || sessionStatus.type === 'retry'
+  const hasIncompleteMessages = lastAssistantMessage ? isMessageIncomplete(lastAssistantMessage) : false
   const hasActiveStream = hasIncompleteMessages && isSessionActive
   const showStopButton = isSessionActive && hasIncompleteMessages
   const hideSecondaryButtons = isMobile && hasActiveStream
+  
+  // Handle iOS keyboard focus
+  const handleFocus = () => {
+    if (isMobile && /iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+      setTimeout(() => {
+        textareaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+      }, 200)
+    }
+  }
 
   
 
@@ -742,8 +751,11 @@ return (
             : "Send a message..."
         }
         disabled={disabled}
-        onFocus={() => setIsFocused(true)}
-        onBlur={() => setIsFocused(false)}
+         onFocus={() => {
+           setIsFocused(true)
+           handleFocus()
+         }}
+         onBlur={() => setIsFocused(false)}
         className={`w-full bg-muted/50 pl-2 md:pl-3 pr-3 py-2 text-[16px] text-foreground placeholder-muted-foreground focus:outline-none focus:bg-muted/70 resize-none min-h-[40px] max-h-[120px] disabled:opacity-50 disabled:cursor-not-allowed md:text-sm rounded-lg ${
           isBashMode
             ? 'border-purple-500/50 bg-purple-500/5 focus:bg-purple-500/10'

@@ -303,11 +303,20 @@ body {
   select {
     font-size: 16px !important;
   }
-  
+   
   /* ContentEditable elements */
   [contenteditable="true"] {
     font-size: 16px !important;
   }
+}
+
+/* iOS keyboard handling */
+.ios-keyboard-visible {
+  padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+}
+
+.ios-keyboard-container {
+  transition: padding-bottom 0.3s ease-in-out;
 }
 
 /* Syntax highlighting for markdown code blocks */
