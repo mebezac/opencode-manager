@@ -1,5 +1,8 @@
 # OpenCode WebUI - Agent Guidelines
 
+NOTE: this is a fork, but it is a standalone project. When asked to make a pull request (or pr) 
+make the pull request against this (mebezac) repo NOT the original (chriswritescode-dev) repo it was forked from
+
 ## Commands
 
 - `pnpm dev` - Start both backend (5001) and frontend (5173)
