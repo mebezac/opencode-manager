@@ -135,8 +135,12 @@ const ModelCard = memo(function ModelCard({
         )}
       </div>
 
-      <div className="text-xs text-muted-foreground mb-2 sm:mb-3 font-mono truncate">
-        {model.id}
+      <div className="mb-2 sm:mb-3">
+        <div className="bg-muted/50 rounded-md p-2 border border-border/50">
+          <code className="text-xs font-mono break-all text-foreground">
+            {`${provider.id}/${model.id}`}
+          </code>
+        </div>
       </div>
 
       {capabilities.length > 0 && (
