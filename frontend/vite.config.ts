@@ -19,7 +19,7 @@ export default defineConfig(({ mode }) => {
         manifest: false,
         workbox: {
           globPatterns: ["**/*.{js,css,html,ico,png,svg,woff,woff2}"],
-          maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
+          maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,
           importScripts: ['/sw-push.js'],
           runtimeCaching: [
             {
