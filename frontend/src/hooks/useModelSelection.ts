@@ -6,7 +6,10 @@ interface UseModelSelectionResult {
   model: ModelSelection | null
   modelString: string | null
   recentModels: ModelSelection[]
+  favoriteModels: ModelSelection[]
   setModel: (model: ModelSelection) => void
+  toggleFavorite: (model: ModelSelection) => void
+  isFavorite: (model: ModelSelection) => boolean
 }
 
 export function useModelSelection(
@@ -14,7 +17,7 @@ export function useModelSelection(
   directory?: string
 ): UseModelSelectionResult {
   const { data: config } = useConfig(opcodeUrl, directory)
-  const { model, recentModels, setModel, initializeFromConfig, getModelString } = useModelStore()
+  const { model, recentModels, favoriteModels, setModel, initializeFromConfig, getModelString, toggleFavorite, isFavorite } = useModelStore()
 
   useEffect(() => {
     if (config?.model) {
@@ -26,6 +29,9 @@ export function useModelSelection(
     model,
     modelString: getModelString(),
     recentModels,
+    favoriteModels,
     setModel,
+    toggleFavorite,
+    isFavorite,
   }
 }

@@ -98,7 +98,8 @@ export function useRefreshMessage({ opcodeUrl, sessionId, directory }: UseRefres
       }
       
       if (model) {
-        const [providerID, modelID] = model.split('/')
+        const [providerID, ...rest] = model.split('/')
+        const modelID = rest.join('/')
         if (providerID && modelID) {
           requestData.model = { providerID, modelID }
         }
