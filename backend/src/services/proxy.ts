@@ -67,7 +67,6 @@ export async function patchOpenCodeConfig(config: Record<string, unknown>): Prom
 export async function proxyRequest(request: Request) {
   const url = new URL(request.url)
   
-  // Remove /api/opencode prefix from pathname before forwarding
   const cleanPathname = url.pathname.replace(/^\/api\/opencode/, '')
   const targetUrl = `${OPENCODE_SERVER_URL}${cleanPathname}${url.search}`
   
@@ -83,10 +82,16 @@ export async function proxyRequest(request: Request) {
       }
     })
 
+    let body: BodyInit | null = null
+    if (request.method !== 'GET' && request.method !== 'HEAD') {
+      const clonedRequest = request.clone()
+      body = clonedRequest.body
+    }
+
     const response = await fetch(targetUrl, {
       method: request.method,
       headers,
-      body: request.method !== 'GET' && request.method !== 'HEAD' ? await request.text() : undefined,
+      body,
     })
 
     const responseHeaders: Record<string, string> = {}

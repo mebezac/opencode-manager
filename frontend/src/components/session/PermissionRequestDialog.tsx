@@ -125,7 +125,7 @@ export function PermissionRequestDialog({
     setIsLoading(true)
     setLoadingAction(response)
     try {
-      await onRespond(permission.permission, permission.sessionID, response)
+      await onRespond(permission.id, permission.sessionID, response)
     } catch (error) {
       console.error('Failed to respond to permission:', error)
       showToast.error('Failed to respond to permission. Please try again.')
