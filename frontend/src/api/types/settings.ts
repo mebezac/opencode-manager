@@ -36,12 +36,6 @@ export interface GitIdentity {
   email: string
 }
 
-export interface KubernetesConfig {
-  enabled: boolean
-  namespace?: string
-  kubeconfigPath?: string
-}
-
 export interface UserPreferences {
   theme: 'dark' | 'light' | 'system'
   mode: 'plan' | 'build'
