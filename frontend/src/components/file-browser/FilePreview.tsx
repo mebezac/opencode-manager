@@ -5,6 +5,25 @@ import type { FileInfo } from '@/types/files'
 import { API_BASE_URL } from '@/config'
 import { VirtualizedTextView, type VirtualizedTextViewHandle } from '@/components/ui/virtualized-text-view'
 import { MarkdownRenderer } from './MarkdownRenderer'
+import { hljs } from 'highlight.js/lib/core'
+import javascript from 'highlight.js/lib/languages/javascript'
+import typescript from 'highlight.js/lib/languages/typescript'
+import python from 'highlight.js/lib/languages/python'
+import json from 'highlight.js/lib/languages/json'
+import xml from 'highlight.js/lib/languages/xml'
+import bash from 'highlight.js/lib/languages/bash'
+import css from 'highlight.js/lib/languages/css'
+import html from 'highlight.js/lib/languages/xml'
+import 'highlight.js/styles/github-dark.css'
+
+hljs.registerLanguage('javascript', javascript)
+hljs.registerLanguage('typescript', typescript)
+hljs.registerLanguage('python', python)
+hljs.registerLanguage('json', json)
+hljs.registerLanguage('xml', xml)
+hljs.registerLanguage('bash', bash)
+hljs.registerLanguage('css', css)
+hljs.registerLanguage('html', html)
 
 
 const API_BASE = API_BASE_URL
@@ -176,6 +195,19 @@ export const FilePreview = memo(function FilePreview({ file, hideHeader = false,
   const isTextFile = file.mimeType?.startsWith('text/') || 
     ['application/json', 'application/xml', 'text/javascript', 'text/typescript'].includes(file.mimeType || '')
 
+  const getLanguageFromFile = (file: FileInfo): string => {
+    const name = file.name.toLowerCase()
+    if (name.endsWith('.ts') || name.endsWith('.tsx')) return 'typescript'
+    if (name.endsWith('.js') || name.endsWith('.jsx')) return 'javascript'
+    if (name.endsWith('.py')) return 'python'
+    if (name.endsWith('.json')) return 'json'
+    if (name.endsWith('.xml') || name.endsWith('.svg')) return 'xml'
+    if (name.endsWith('.bash') || name.endsWith('.sh')) return 'bash'
+    if (name.endsWith('.css')) return 'css'
+    if (name.endsWith('.html') || name.endsWith('.htm')) return 'html'
+    return 'plaintext'
+  }
+
   const renderContent = () => {
     if (file.mimeType?.startsWith('image/')) {
       return (
@@ -262,8 +294,11 @@ export const FilePreview = memo(function FilePreview({ file, hideHeader = false,
         if (isMarkdownFile && markdownPreview) {
           return <MarkdownRenderer content={textContent} />
         }
+
+        const language = getLanguageFromFile(file)
+        const highlighted = hljs.highlight(textContent, { language, ignoreIllegals: true }).value
         
-        const lines = textContent.split('\n')
+        const lines = highlighted.split('\n')
         return (
           <div className={`pb-[200px] text-sm bg-muted text-foreground rounded font-mono ${
             lineWrap ? 'overflow-x-hidden' : 'overflow-x-auto'
@@ -280,11 +315,12 @@ export const FilePreview = memo(function FilePreview({ file, hideHeader = false,
                   <span className="w-12 flex-shrink-0 text-right pr-3 text-muted-foreground select-none border-r border-border/50 text-xs">
                     {lineNum}
                   </span>
-                  <pre className={`flex-1 pl-3 ${
-                    lineWrap ? 'whitespace-pre-wrap break-words' : 'whitespace-pre'
-                  }`}>
-                    {line || ' '}
-                  </pre>
+                  <pre 
+                    className={`flex-1 pl-3 hljs ${
+                      lineWrap ? 'whitespace-pre-wrap break-words' : 'whitespace-pre'
+                    }`}
+                    dangerouslySetInnerHTML={{ __html: line || '&nbsp;' }}
+                  />
                 </div>
               )
             })}
