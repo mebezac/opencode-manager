@@ -5,7 +5,7 @@ import type { FileInfo } from '@/types/files'
 import { API_BASE_URL } from '@/config'
 import { VirtualizedTextView, type VirtualizedTextViewHandle } from '@/components/ui/virtualized-text-view'
 import { MarkdownRenderer } from './MarkdownRenderer'
-import hljs from 'highlight.js'
+import hljs from 'highlight.js/lib/common'
 import 'highlight.js/styles/github-dark.css'
 
 
