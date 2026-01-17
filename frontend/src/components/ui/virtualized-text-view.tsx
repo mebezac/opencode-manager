@@ -2,25 +2,8 @@ import { useRef, useCallback, useEffect, useState, useMemo, forwardRef, useImper
 import { useVirtualizedContent } from '@/hooks/useVirtualizedContent'
 import { useMobile } from '@/hooks/useMobile'
 import { GPU_ACCELERATED_STYLE } from '@/lib/utils'
-import hljs from 'highlight.js/lib/core'
-import javascript from 'highlight.js/lib/languages/javascript'
-import typescript from 'highlight.js/lib/languages/typescript'
-import python from 'highlight.js/lib/languages/python'
-import json from 'highlight.js/lib/languages/json'
-import xml from 'highlight.js/lib/languages/xml'
-import bash from 'highlight.js/lib/languages/bash'
-import css from 'highlight.js/lib/languages/css'
-import html from 'highlight.js/lib/languages/xml'
+import hljs from 'highlight.js'
 import 'highlight.js/styles/github-dark.css'
-
-hljs.registerLanguage('javascript', javascript)
-hljs.registerLanguage('typescript', typescript)
-hljs.registerLanguage('python', python)
-hljs.registerLanguage('json', json)
-hljs.registerLanguage('xml', xml)
-hljs.registerLanguage('bash', bash)
-hljs.registerLanguage('css', css)
-hljs.registerLanguage('html', html)
 
 interface VirtualizedTextViewProps {
   filePath: string
@@ -48,19 +31,6 @@ const CONTENT_PADDING = 24
 
 let measureCanvas: HTMLCanvasElement | null = null
 let measureContext: CanvasRenderingContext2D | null = null
-
-function getLanguageFromPath(filePath: string): string {
-  const name = filePath.toLowerCase()
-  if (name.endsWith('.ts') || name.endsWith('.tsx')) return 'typescript'
-  if (name.endsWith('.js') || name.endsWith('.jsx')) return 'javascript'
-  if (name.endsWith('.py')) return 'python'
-  if (name.endsWith('.json')) return 'json'
-  if (name.endsWith('.xml') || name.endsWith('.svg')) return 'xml'
-  if (name.endsWith('.bash') || name.endsWith('.sh')) return 'bash'
-  if (name.endsWith('.css')) return 'css'
-  if (name.endsWith('.html') || name.endsWith('.htm')) return 'html'
-  return 'plaintext'
-}
 
 function getTextWidth(text: string): number {
   if (!measureCanvas) {
@@ -98,7 +68,6 @@ interface VirtualizedLineProps {
   lineWrap: boolean
   isLoaded: boolean
   onLineChange: (lineNum: number, value: string) => void
-  language: string
 }
 
 const VirtualizedLine = memo(function VirtualizedLine({
@@ -113,16 +82,15 @@ const VirtualizedLine = memo(function VirtualizedLine({
   lineWrap,
   isLoaded,
   onLineChange,
-  language,
 }: VirtualizedLineProps) {
   const highlightedContent = useMemo(() => {
     if (!isLoaded || editable || !content) return content
     try {
-      return hljs.highlight(content, { language, ignoreIllegals: true }).value
+      return hljs.highlightAuto(content).value
     } catch {
       return content
     }
-  }, [content, isLoaded, editable, language])
+  }, [content, isLoaded, editable])
 
   return (
     <div
@@ -184,7 +152,6 @@ export const VirtualizedTextView = forwardRef<VirtualizedTextViewHandle, Virtual
   initialLineNumber,
   lineWrap = false,
 }, ref) {
-  const language = getLanguageFromPath(filePath)
   const containerRef = useRef<HTMLDivElement>(null)
   const scrollTopRef = useRef(0)
   const [renderTrigger, setRenderTrigger] = useState(0)
@@ -542,7 +509,6 @@ export const VirtualizedTextView = forwardRef<VirtualizedTextViewHandle, Virtual
             lineWrap={lineWrap}
             isLoaded={isLoaded}
             onLineChange={handleLineChange}
-            language={language}
           />
         ))}
         
