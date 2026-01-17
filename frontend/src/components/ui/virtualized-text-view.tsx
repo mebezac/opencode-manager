@@ -2,7 +2,7 @@ import { useRef, useCallback, useEffect, useState, useMemo, forwardRef, useImper
 import { useVirtualizedContent } from '@/hooks/useVirtualizedContent'
 import { useMobile } from '@/hooks/useMobile'
 import { GPU_ACCELERATED_STYLE } from '@/lib/utils'
-import { hljs } from 'highlight.js/lib/core'
+import hljs from 'highlight.js/lib/core'
 import javascript from 'highlight.js/lib/languages/javascript'
 import typescript from 'highlight.js/lib/languages/typescript'
 import python from 'highlight.js/lib/languages/python'

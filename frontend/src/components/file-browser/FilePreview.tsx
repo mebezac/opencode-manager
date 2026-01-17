@@ -5,7 +5,7 @@ import type { FileInfo } from '@/types/files'
 import { API_BASE_URL } from '@/config'
 import { VirtualizedTextView, type VirtualizedTextViewHandle } from '@/components/ui/virtualized-text-view'
 import { MarkdownRenderer } from './MarkdownRenderer'
-import { hljs } from 'highlight.js/lib/core'
+import hljs from 'highlight.js/lib/core'
 import javascript from 'highlight.js/lib/languages/javascript'
 import typescript from 'highlight.js/lib/languages/typescript'
 import python from 'highlight.js/lib/languages/python'
@@ -303,7 +303,7 @@ export const FilePreview = memo(function FilePreview({ file, hideHeader = false,
           <div className={`pb-[200px] text-sm bg-muted text-foreground rounded font-mono ${
             lineWrap ? 'overflow-x-hidden' : 'overflow-x-auto'
           }`}>
-            {lines.map((line, index) => {
+            {lines.map((line: string, index: number) => {
               const lineNum = index + 1
               const isHighlighted = highlightedLine === lineNum
               return (
