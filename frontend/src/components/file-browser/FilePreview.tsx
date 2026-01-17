@@ -5,6 +5,8 @@ import type { FileInfo } from '@/types/files'
 import { API_BASE_URL } from '@/config'
 import { VirtualizedTextView, type VirtualizedTextViewHandle } from '@/components/ui/virtualized-text-view'
 import { MarkdownRenderer } from './MarkdownRenderer'
+import hljs from 'highlight.js'
+import 'highlight.js/styles/github-dark.css'
 
 
 const API_BASE = API_BASE_URL
@@ -262,13 +264,15 @@ export const FilePreview = memo(function FilePreview({ file, hideHeader = false,
         if (isMarkdownFile && markdownPreview) {
           return <MarkdownRenderer content={textContent} />
         }
+
+        const highlighted = hljs.highlightAuto(textContent).value
         
-        const lines = textContent.split('\n')
+        const lines = highlighted.split('\n')
         return (
           <div className={`pb-[200px] text-sm bg-muted text-foreground rounded font-mono ${
             lineWrap ? 'overflow-x-hidden' : 'overflow-x-auto'
           }`}>
-            {lines.map((line, index) => {
+            {lines.map((line: string, index: number) => {
               const lineNum = index + 1
               const isHighlighted = highlightedLine === lineNum
               return (
@@ -280,11 +284,12 @@ export const FilePreview = memo(function FilePreview({ file, hideHeader = false,
                   <span className="w-12 flex-shrink-0 text-right pr-3 text-muted-foreground select-none border-r border-border/50 text-xs">
                     {lineNum}
                   </span>
-                  <pre className={`flex-1 pl-3 ${
-                    lineWrap ? 'whitespace-pre-wrap break-words' : 'whitespace-pre'
-                  }`}>
-                    {line || ' '}
-                  </pre>
+                  <pre 
+                    className={`flex-1 pl-3 hljs ${
+                      lineWrap ? 'whitespace-pre-wrap break-words' : 'whitespace-pre'
+                    }`}
+                    dangerouslySetInnerHTML={{ __html: line || '&nbsp;' }}
+                  />
                 </div>
               )
             })}

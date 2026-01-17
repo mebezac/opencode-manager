@@ -2,6 +2,8 @@ import { useRef, useCallback, useEffect, useState, useMemo, forwardRef, useImper
 import { useVirtualizedContent } from '@/hooks/useVirtualizedContent'
 import { useMobile } from '@/hooks/useMobile'
 import { GPU_ACCELERATED_STYLE } from '@/lib/utils'
+import hljs from 'highlight.js'
+import 'highlight.js/styles/github-dark.css'
 
 interface VirtualizedTextViewProps {
   filePath: string
@@ -81,6 +83,15 @@ const VirtualizedLine = memo(function VirtualizedLine({
   isLoaded,
   onLineChange,
 }: VirtualizedLineProps) {
+  const highlightedContent = useMemo(() => {
+    if (!isLoaded || editable || !content) return content
+    try {
+      return hljs.highlightAuto(content).value
+    } catch {
+      return content
+    }
+  }, [content, isLoaded, editable])
+
   return (
     <div
       className={`absolute flex overflow-hidden ${isHighlighted ? 'bg-yellow-500/30' : 'bg-background'}`}
@@ -118,14 +129,13 @@ const VirtualizedLine = memo(function VirtualizedLine({
           style={{ lineHeight: `${lineHeight}px` }}
         />
       ) : (
-        <div
-          className={`flex-1 pl-2 ${
+        <pre
+          className={`flex-1 pl-2 hljs ${
             lineWrap ? 'whitespace-pre-wrap break-words' : 'whitespace-pre overflow-hidden text-ellipsis'
           }`}
           style={{ lineHeight: `${lineHeight}px` }}
-        >
-          {content}
-        </div>
+          dangerouslySetInnerHTML={{ __html: highlightedContent || '&nbsp;' }}
+        />
       )}
     </div>
   )
