@@ -8,9 +8,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { Badge } from '@/components/ui/badge'
 import { useModelSelection } from '@/hooks/useModelSelection'
 import { useVariants } from '@/hooks/useVariants'
-import { formatModelName } from '@/api/providers'
+import { formatModelName, formatProviderName } from '@/api/providers'
 import { useQuery } from '@tanstack/react-query'
 import { useOpenCodeClient } from '@/hooks/useOpenCode'
 
@@ -51,8 +52,10 @@ export function ModelQuickSelect({
       .slice(0, 5)
       .map(recent => {
         let displayName = recent.modelID
+        let providerName = recent.providerID
         for (const provider of providersData.all) {
           if (provider.id === recent.providerID && provider.models) {
+            providerName = formatProviderName(provider)
             const modelData = provider.models[recent.modelID]
             if (modelData) {
               displayName = formatModelName(modelData)
@@ -63,6 +66,7 @@ export function ModelQuickSelect({
         return {
           ...recent,
           displayName,
+          providerName,
           key: `${recent.providerID}/${recent.modelID}`,
         }
       })
@@ -125,10 +129,15 @@ export function ModelQuickSelect({
               <DropdownMenuItem
                 key={recent.key}
                 onClick={() => handleModelSelect(recent.providerID, recent.modelID)}
-                className="flex items-center justify-between"
+                className="flex items-center justify-between gap-2"
               >
-                <span className="truncate">{recent.displayName}</span>
-                {modelString === recent.key && <Check className="h-4 w-4" />}
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <span className="truncate">{recent.displayName}</span>
+                  <Badge variant="outline" className="text-xs px-1.5 py-0 flex-shrink-0">
+                    {recent.providerName}
+                  </Badge>
+                </div>
+                {modelString === recent.key && <Check className="h-4 w-4 flex-shrink-0" />}
               </DropdownMenuItem>
             ))}
             <DropdownMenuSeparator />
