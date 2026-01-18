@@ -108,10 +108,13 @@ const ModelCard = memo(function ModelCard({
     >
       <div className="flex items-start justify-between mb-2">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5 mb-1">
+          <div className="flex items-center gap-1.5 mb-1 flex-wrap">
             <h4 className="font-semibold text-sm truncate">
               {formatModelName(model)}
             </h4>
+            <Badge variant="outline" className="text-xs px-1.5 py-0 flex-shrink-0">
+              {formatProviderName(provider)}
+            </Badge>
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -126,9 +129,6 @@ const ModelCard = memo(function ModelCard({
               )}
             </button>
           </div>
-          <p className="text-xs text-muted-foreground truncate">
-            {formatProviderName(provider)}
-          </p>
         </div>
         {isSelected && (
           <Check className="h-4 w-4 text-blue-500 flex-shrink-0 ml-2" />
