@@ -9,6 +9,7 @@ import { useVariants } from '@/hooks/useVariants'
 
 import { useUserBash } from '@/stores/userBashStore'
 import { useMobile } from '@/hooks/useMobile'
+import { useKeyboardVisibility } from '@/hooks/useKeyboardVisibility'
 import { useSessionStatusForSession } from '@/stores/sessionStatusStore'
 import { usePermissions } from '@/contexts/EventContext'
 import { ChevronDown, Upload, X } from 'lucide-react'
@@ -697,6 +698,7 @@ const { model, modelString } = useModelSelection(opcodeUrl, directory)
   const currentModel = modelString || ''
   const displayModelName = model?.modelID || currentModel
   const isMobile = useMobile()
+  const { isKeyboardVisible } = useKeyboardVisibility()
   const { setShowDialog, hasForSession: hasPermissionsForSession } = usePermissions()
   const hasPendingPermissionForSession = hasPermissionsForSession(sessionID)
   const { hasVariants, currentVariant, cycleVariant } = useVariants(opcodeUrl, directory)
@@ -723,9 +725,11 @@ const { model, modelString } = useModelSelection(opcodeUrl, directory)
     }
   }
 
-  
-
-  
+  useEffect(() => {
+    if (isKeyboardVisible && textareaRef.current && isFocused) {
+      textareaRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+  }, [isKeyboardVisible, isFocused])
 
   
 
