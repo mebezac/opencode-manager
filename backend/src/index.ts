@@ -393,10 +393,12 @@ const shutdown = async (signal: string) => {
 process.on('SIGTERM', () => shutdown('SIGTERM'))
 process.on('SIGINT', () => shutdown('SIGINT'))
 
-serve({
+const server = serve({
   fetch: app.fetch,
   port: PORT,
   hostname: HOST,
 })
+
+server.timeout = 0
 
 logger.info(`🚀 OpenCode WebUI API running on http://${HOST}:${PORT}`)
