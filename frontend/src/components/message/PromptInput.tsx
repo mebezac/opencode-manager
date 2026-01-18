@@ -597,9 +597,16 @@ export const PromptInput = forwardRef<PromptInputHandle, PromptInputProps>(funct
       }
     }
     
-    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-      e.preventDefault()
-      handleSubmit()
+    if (e.key === 'Enter') {
+      if (e.metaKey || e.ctrlKey) {
+        e.preventDefault()
+        handleSubmit()
+      } else if (!e.shiftKey) {
+        const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent)
+        if (isIOS) {
+          return
+        }
+      }
     } else if (e.key === 'Escape') {
       setShowSuggestions(false)
       setSuggestionQuery('')
@@ -700,12 +707,19 @@ const { model, modelString } = useModelSelection(opcodeUrl, directory)
   const showStopButton = isSessionActive && hasIncompleteMessages
   const hideSecondaryButtons = isMobile && hasActiveStream
   
-  // Handle iOS keyboard focus
   const handleFocus = () => {
-    if (isMobile && /iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+    setIsFocused(true)
+    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent)
+    if (isIOS) {
       setTimeout(() => {
-        textareaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
-      }, 200)
+        if (textareaRef.current) {
+          textareaRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
+          window.scrollTo({ 
+            top: document.documentElement.scrollHeight, 
+            behavior: 'smooth' 
+          })
+        }
+      }, 300)
     }
   }
 
@@ -751,10 +765,7 @@ return (
             : "Send a message..."
         }
         disabled={disabled}
-         onFocus={() => {
-           setIsFocused(true)
-           handleFocus()
-         }}
+         onFocus={handleFocus}
          onBlur={() => setIsFocused(false)}
         className={`w-full bg-muted/50 pl-2 md:pl-3 pr-3 py-2 text-[16px] text-foreground placeholder-muted-foreground focus:outline-none focus:bg-muted/70 resize-none min-h-[40px] max-h-[120px] disabled:opacity-50 disabled:cursor-not-allowed md:text-sm rounded-lg ${
           isBashMode

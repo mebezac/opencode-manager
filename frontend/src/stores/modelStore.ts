@@ -12,6 +12,7 @@ interface ModelStore {
   favoriteModels: ModelSelection[]
   variants: Record<string, string | undefined>
   isInitialized: boolean
+  favoritesLoaded: boolean
 
   setModel: (model: ModelSelection) => void
   initializeFromConfig: (configModel: string | undefined) => void
@@ -21,6 +22,8 @@ interface ModelStore {
   clearVariant: (model: ModelSelection) => void
   toggleFavorite: (model: ModelSelection) => void
   isFavorite: (model: ModelSelection) => boolean
+  loadFavoritesFromAPI: () => Promise<void>
+  setFavorites: (favorites: ModelSelection[]) => void
 }
 
 const MAX_RECENT_MODELS = 10
@@ -32,6 +35,8 @@ function parseModelString(model: string): ModelSelection | null {
   return { providerID, modelID }
 }
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
+
 export const useModelStore = create<ModelStore>()(
   persist(
     (set, get) => ({
@@ -40,6 +45,7 @@ export const useModelStore = create<ModelStore>()(
       favoriteModels: [],
       variants: {},
       isInitialized: false,
+      favoritesLoaded: false,
 
       setModel: (model: ModelSelection) => {
         set((state) => {
@@ -106,23 +112,39 @@ export const useModelStore = create<ModelStore>()(
         })
       },
 
-      toggleFavorite: (model: ModelSelection) => {
-        set((state) => {
-          const isFav = state.favoriteModels.some(
-            (m) => m.providerID === model.providerID && m.modelID === model.modelID
-          )
+      toggleFavorite: async (model: ModelSelection) => {
+        const state = get()
+        const isFav = state.favoriteModels.some(
+          (m) => m.providerID === model.providerID && m.modelID === model.modelID
+        )
+        
+        try {
           if (isFav) {
-            return {
+            await fetch(`${API_BASE_URL}/api/favorites`, {
+              method: 'DELETE',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ providerID: model.providerID, modelID: model.modelID })
+            })
+            
+            set({
               favoriteModels: state.favoriteModels.filter(
                 (m) => !(m.providerID === model.providerID && m.modelID === model.modelID)
               ),
-            }
+            })
           } else {
-            return {
+            await fetch(`${API_BASE_URL}/api/favorites`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ providerID: model.providerID, modelID: model.modelID })
+            })
+            
+            set({
               favoriteModels: [...state.favoriteModels, model],
-            }
+            })
           }
-        })
+        } catch (error) {
+          console.error('Failed to toggle favorite:', error)
+        }
       },
 
       isFavorite: (model: ModelSelection) => {
@@ -130,6 +152,29 @@ export const useModelStore = create<ModelStore>()(
         return state.favoriteModels.some(
           (m) => m.providerID === model.providerID && m.modelID === model.modelID
         )
+      },
+
+      loadFavoritesFromAPI: async () => {
+        const state = get()
+        if (state.favoritesLoaded) return
+        
+        try {
+          const response = await fetch(`${API_BASE_URL}/api/favorites`)
+          if (response.ok) {
+            const data = await response.json()
+            set({
+              favoriteModels: data.favorites || [],
+              favoritesLoaded: true
+            })
+          }
+        } catch (error) {
+          console.error('Failed to load favorites from API:', error)
+          set({ favoritesLoaded: true })
+        }
+      },
+
+      setFavorites: (favorites: ModelSelection[]) => {
+        set({ favoriteModels: favorites })
       },
     }),
     {

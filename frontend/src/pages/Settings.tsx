@@ -3,8 +3,11 @@ import { Header } from '@/components/ui/header'
 import { GeneralSettings } from '@/components/settings/GeneralSettings'
 import { KeyboardShortcuts } from '@/components/settings/KeyboardShortcuts'
 import { OpenCodeConfigManager } from '@/components/settings/OpenCodeConfigManager'
+import { useVersion } from '@/hooks/useVersion'
 
 export function Settings() {
+  const { data: versionInfo } = useVersion()
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-background">
       <Header>
@@ -45,6 +48,19 @@ export function Settings() {
             </div>
           </TabsContent>
         </Tabs>
+
+        <div className="mt-8 text-center text-xs text-muted-foreground">
+          {versionInfo && (
+            <p>
+              OpenCode Manager v{versionInfo.version}
+              {versionInfo.opencodeVersion && (
+                <span className="ml-2">
+                  • OpenCode v{versionInfo.opencodeVersion}
+                </span>
+              )}
+            </p>
+          )}
+        </div>
       </div>
     </div>
   )

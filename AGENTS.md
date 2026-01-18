@@ -48,3 +48,10 @@ make the pull request against this (mebezac) repo NOT the original (chriswritesc
 - OpenCode server runs on port 5551, backend API on port 5001
 - Prefer pnpm over npm for all package management
 - Run `pnpm lint` after completing tasks to ensure code quality
+
+## Release Process
+
+When creating a new release:
+1. Update the version in `package.json`
+2. The version will be automatically displayed in the Settings page
+3. For Docker images, the version is read from package.json at build time

@@ -137,6 +137,8 @@ export function runMigrations(db: Database): void {
     
     migratePushSubscriptions(db)
     
+    migrateFavoriteModels(db)
+    
     logger.info('Database migrations completed successfully')
   } catch (error) {
     logger.error('Failed to run database migrations:', error)
@@ -212,5 +214,30 @@ function migratePushSubscriptions(db: Database): void {
     }
   } catch (error) {
     logger.error('Failed to create push_subscriptions table:', error)
+  }
+}
+
+function migrateFavoriteModels(db: Database): void {
+  try {
+    const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='favorite_models'").all()
+    
+    if (tables.length === 0) {
+      logger.info('Creating favorite_models table')
+      db.run(`
+        CREATE TABLE favorite_models (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id TEXT NOT NULL DEFAULT 'default',
+          provider_id TEXT NOT NULL,
+          model_id TEXT NOT NULL,
+          created_at INTEGER NOT NULL,
+          UNIQUE(user_id, provider_id, model_id)
+        )
+      `)
+      
+      db.run('CREATE INDEX IF NOT EXISTS idx_favorite_user_id ON favorite_models(user_id)')
+      logger.info('Successfully created favorite_models table')
+    }
+  } catch (error) {
+    logger.error('Failed to create favorite_models table:', error)
   }
 }

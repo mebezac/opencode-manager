@@ -1,6 +1,19 @@
 import { Hono } from 'hono'
 import type { Database } from 'bun:sqlite'
 import { opencodeServerManager } from '../services/opencode-single-server'
+import { readFileSync } from 'fs'
+import { join } from 'path'
+
+function getAppVersion(): string {
+  try {
+    const packageJson = JSON.parse(
+      readFileSync(join(process.cwd(), 'package.json'), 'utf-8')
+    )
+    return packageJson.version || 'unknown'
+  } catch {
+    return 'unknown'
+  }
+}
 
 export function createHealthRoutes(db: Database) {
   const app = new Hono()
@@ -57,6 +70,15 @@ export function createHealthRoutes(db: Database) {
         timestamp: new Date().toISOString()
       }, 500)
     }
+  })
+
+  app.get('/version', (c) => {
+    return c.json({
+      version: getAppVersion(),
+      opencodeVersion: opencodeServerManager.getVersion(),
+      opencodeMinVersion: opencodeServerManager.getMinVersion(),
+      opencodeVersionSupported: opencodeServerManager.isVersionSupported()
+    })
   })
 
   return app

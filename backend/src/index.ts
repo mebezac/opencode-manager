@@ -15,6 +15,7 @@ import { createOAuthRoutes } from './routes/oauth'
 import { createTitleRoutes } from './routes/title'
 import { createSSERoutes } from './routes/sse'
 import { createPushRoutes } from './routes/push'
+import { createFavoritesRoutes } from './routes/favorites'
 import { sseAggregator } from './services/sse-aggregator'
 import { ensureDirectoryExists, writeFileContent, fileExists, readFileContent } from './services/file-operations'
 import { SettingsService } from './services/settings'
@@ -306,6 +307,7 @@ app.route('/api/tts', createTTSRoutes(db))
 app.route('/api/generate-title', createTitleRoutes())
 app.route('/api/sse', createSSERoutes())
 app.route('/api/push', createPushRoutes(db))
+app.route('/api/favorites', createFavoritesRoutes(db))
 
 app.all('/api/opencode/*', async (c) => {
   const request = c.req.raw
