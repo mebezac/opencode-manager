@@ -399,6 +399,6 @@ const server = serve({
   hostname: HOST,
 })
 
-server.timeout = 0
+server.timeout = 900000
 
 logger.info(`🚀 OpenCode WebUI API running on http://${HOST}:${PORT}`)
