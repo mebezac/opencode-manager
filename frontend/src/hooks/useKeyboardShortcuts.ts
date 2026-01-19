@@ -1,6 +1,7 @@
 import { useEffect, useCallback, useRef, useState } from 'react'
 import { useSettings } from './useSettings'
 import { DEFAULT_LEADER_KEY } from '@/api/types/settings'
+import { useMobile } from './useMobile'
 
 const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0
 
@@ -62,6 +63,9 @@ export function useKeyboardShortcuts(actions: ShortcutActions = {}) {
   const leaderTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const preferencesRef = useRef(preferences)
   preferencesRef.current = preferences
+  const isMobile = useMobile()
+  const isMobileRef = useRef(isMobile)
+  isMobileRef.current = isMobile
 
   const actionsRef = useRef(actions)
   actionsRef.current = actions
@@ -121,6 +125,8 @@ export function useKeyboardShortcuts(actions: ShortcutActions = {}) {
   }, [])
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (isMobileRef.current) return
+    
     const shortcut = parseEventShortcut(e)
     if (!shortcut) return
 

@@ -1,18 +1,41 @@
 import { Hono } from 'hono'
 import type { Database } from 'bun:sqlite'
 import { opencodeServerManager } from '../services/opencode-single-server'
-import { readFileSync } from 'fs'
+import { readFileSync, existsSync } from 'fs'
 import { join } from 'path'
+import { logger } from '../utils/logger'
 
 function getAppVersion(): string {
-  try {
-    const packageJson = JSON.parse(
-      readFileSync(join(process.cwd(), 'package.json'), 'utf-8')
-    )
-    return packageJson.version || 'unknown'
-  } catch {
-    return 'unknown'
+  const possiblePaths = [
+    join(process.cwd(), 'package.json'),
+    join(process.cwd(), '..', 'package.json'),
+    join(process.cwd(), '..', '..', 'package.json'),
+  ]
+
+  logger.info('[Version] Attempting to read version from package.json')
+  logger.info('[Version] Current working directory:', process.cwd())
+
+  for (const packagePath of possiblePaths) {
+    try {
+      logger.info(`[Version] Trying path: ${packagePath}`)
+      
+      if (!existsSync(packagePath)) {
+        logger.info(`[Version] File does not exist at: ${packagePath}`)
+        continue
+      }
+
+      const packageJson = JSON.parse(readFileSync(packagePath, 'utf-8'))
+      const version = packageJson.version || 'unknown'
+      
+      logger.info(`[Version] Successfully read version: ${version} from ${packagePath}`)
+      return version
+    } catch (error) {
+      logger.warn(`[Version] Failed to read from ${packagePath}:`, error)
+    }
   }
+
+  logger.error('[Version] Could not find package.json in any expected location')
+  return 'unknown'
 }
 
 export function createHealthRoutes(db: Database) {
@@ -73,11 +96,23 @@ export function createHealthRoutes(db: Database) {
   })
 
   app.get('/version', (c) => {
+    const version = getAppVersion()
+    const opencodeVersion = opencodeServerManager.getVersion()
+    const opencodeMinVersion = opencodeServerManager.getMinVersion()
+    const opencodeVersionSupported = opencodeServerManager.isVersionSupported()
+
+    logger.info('[Version Endpoint] Responding with:', {
+      version,
+      opencodeVersion,
+      opencodeMinVersion,
+      opencodeVersionSupported
+    })
+
     return c.json({
-      version: getAppVersion(),
-      opencodeVersion: opencodeServerManager.getVersion(),
-      opencodeMinVersion: opencodeServerManager.getMinVersion(),
-      opencodeVersionSupported: opencodeServerManager.isVersionSupported()
+      version,
+      opencodeVersion,
+      opencodeMinVersion,
+      opencodeVersionSupported
     })
   })
 
