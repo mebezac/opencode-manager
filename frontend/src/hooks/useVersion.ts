@@ -13,13 +13,20 @@ export function useVersion() {
   return useQuery<VersionInfo>({
     queryKey: ['version'],
     queryFn: async () => {
-      const response = await fetch(`${API_BASE_URL}/api/health/version`)
+      const url = `${API_BASE_URL}/api/health/version`
+      
+      const response = await fetch(url)
+      
       if (!response.ok) {
+        console.error('[useVersion] Failed to fetch version:', response.status, response.statusText)
         throw new Error('Failed to fetch version')
       }
+      
       return response.json()
     },
     staleTime: Infinity,
     gcTime: Infinity,
+    retry: 3,
+    retryDelay: 1000,
   })
 }

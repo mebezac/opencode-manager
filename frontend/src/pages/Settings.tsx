@@ -6,7 +6,7 @@ import { OpenCodeConfigManager } from '@/components/settings/OpenCodeConfigManag
 import { useVersion } from '@/hooks/useVersion'
 
 export function Settings() {
-  const { data: versionInfo } = useVersion()
+  const { data: versionInfo, isLoading, isError, error } = useVersion()
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-background">
@@ -50,7 +50,13 @@ export function Settings() {
         </Tabs>
 
         <div className="mt-8 text-center text-xs text-muted-foreground">
-          {versionInfo && (
+          {isLoading && <p>Loading version information...</p>}
+          {isError && (
+            <p className="text-destructive">
+              Failed to load version: {error?.message || 'Unknown error'}
+            </p>
+          )}
+          {versionInfo && !isLoading && (
             <p>
               OpenCode Manager v{versionInfo.version}
               {versionInfo.opencodeVersion && (
