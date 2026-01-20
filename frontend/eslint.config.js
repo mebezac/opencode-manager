@@ -17,6 +17,11 @@ export default [
     languageOptions: {
       ecmaVersion: 2020,
       globals: globals.browser,
+      parserOptions: {
+        projectService: {
+          defaultProject: "./tsconfig.app.json"
+        },
+      },
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
@@ -40,5 +45,17 @@ export default [
     rules: {
       'react-refresh/only-export-components': 'off',
     },
+  },
+  // Special rules for test files
+  {
+    files: ['**/*.test.ts', '**/*.test.tsx', '**/*.spec.ts', '**/*.spec.tsx'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off', // Often needed for mocks
+      '@typescript-eslint/no-empty-function': 'off', // Common in test setup
+      '@typescript-eslint/no-unused-vars': ['warn', {
+        argsIgnorePattern: '^_',
+        varsIgnorePattern: '^_'
+      }],
+    }
   },
 ]
