@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { Toaster } from 'sonner'
@@ -13,7 +13,6 @@ import { TTSProvider } from './contexts/TTSContext'
 import { EventProvider, usePermissions } from '@/contexts/EventContext'
 import { PermissionRequestDialog } from './components/session/PermissionRequestDialog'
 import { NotificationPermissionPrompt } from './components/notifications/NotificationPermissionPrompt'
-import { useEffect, useState } from 'react'
 
 const queryClient = new QueryClient({
   defaultOptions: {
