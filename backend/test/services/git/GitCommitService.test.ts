@@ -7,14 +7,16 @@ vi.mock('bun:sqlite', () => ({
 }))
 
 vi.mock('../../../src/services/settings', () => ({
-  SettingsService: vi.fn().mockImplementation(() => ({
-    getSettings: vi.fn().mockReturnValue({
-      preferences: {
-        gitIdentity: null,
-        gitCredentials: [],
-      },
-    }),
-  })),
+  SettingsService: class {
+    getSettings() {
+      return {
+        preferences: {
+          gitIdentity: null,
+          gitCredentials: [],
+        },
+      }
+    }
+  },
 }))
 
 vi.mock('../../../src/utils/process', () => ({
