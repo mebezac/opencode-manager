@@ -66,6 +66,7 @@ function RouterContent() {
         expand={false}
         richColors
         closeButton
+        duration={2500}
       />
       {showNotificationPrompt && (
         <NotificationPermissionPrompt onClose={handleCloseNotificationPrompt} />
