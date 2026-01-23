@@ -167,6 +167,7 @@ function migrateGitTokenToCredentials(db: Database): void {
           continue
         }
 
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { gitToken: _, ...rest } = parsed
         const migrated = {
           ...rest,
