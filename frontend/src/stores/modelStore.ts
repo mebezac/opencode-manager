@@ -13,9 +13,10 @@ interface ModelStore {
   variants: Record<string, string | undefined>
   isInitialized: boolean
   favoritesLoaded: boolean
+  lastConfigModel: string | undefined
 
   setModel: (model: ModelSelection) => void
-  initializeFromConfig: (configModel: string | undefined) => void
+  syncFromConfig: (configModel: string | undefined) => void
   getModelString: () => string | null
   setVariant: (model: ModelSelection, variant: string | undefined) => void
   getVariant: (model: ModelSelection) => string | undefined
@@ -46,6 +47,7 @@ export const useModelStore = create<ModelStore>()(
       variants: {},
       isInitialized: false,
       favoritesLoaded: false,
+      lastConfigModel: undefined,
 
       setModel: (model: ModelSelection) => {
         set((state) => {
@@ -63,18 +65,25 @@ export const useModelStore = create<ModelStore>()(
         })
       },
 
-      initializeFromConfig: (configModel: string | undefined) => {
+      syncFromConfig: (configModel: string | undefined) => {
         const state = get()
-        if (state.isInitialized) return
+        if (state.lastConfigModel === configModel) return
         
-        if (!state.model && configModel) {
+        if (configModel) {
           const parsed = parseModelString(configModel)
           if (parsed) {
-            set({ model: parsed, isInitialized: true })
+            const newRecent = [
+              parsed,
+              ...state.recentModels.filter(
+                (m) => !(m.providerID === parsed.providerID && m.modelID === parsed.modelID)
+              ),
+            ].slice(0, MAX_RECENT_MODELS)
+            
+            set({ model: parsed, lastConfigModel: configModel, recentModels: newRecent })
             return
           }
         }
-        set({ isInitialized: true })
+        set({ lastConfigModel: configModel })
       },
 
       getModelString: () => {

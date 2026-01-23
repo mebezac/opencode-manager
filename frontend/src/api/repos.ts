@@ -142,8 +142,17 @@ export async function switchBranch(id: number, branch: string): Promise<Repo> {
   return response.json()
 }
 
-export async function listBranches(id: number): Promise<{ local: string[], all: string[], current: string | null }> {
-  const response = await fetch(`${API_BASE_URL}/api/repos/${id}/branches`)
+interface GitBranch {
+  name: string
+  type: 'local' | 'remote'
+  current: boolean
+  upstream?: string
+  ahead?: number
+  behind?: number
+}
+
+export async function listBranches(id: number): Promise<{ branches: GitBranch[], status: { ahead: number, behind: number } }> {
+  const response = await fetch(`${API_BASE_URL}/api/repos/${id}/git/branches`)
 
   if (!response.ok) {
     throw new Error('Failed to list branches')
@@ -199,5 +208,16 @@ export async function updateRepoOrder(order: number[]): Promise<void> {
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.error || 'Failed to update repo order')
+  }
+}
+
+export async function resetRepoPermissions(id: number): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/api/repos/${id}/reset-permissions`, {
+    method: 'POST',
+  })
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.error || 'Failed to reset permissions')
   }
 }
