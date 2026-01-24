@@ -10,7 +10,7 @@ import { createIPCServer, type IPCServer } from './ipc/ipcServer'
 import { GitAuthService } from './services/git-auth'
 import { createSettingsRoutes } from './routes/settings'
 import { createHealthRoutes } from './routes/health'
-import { createTTSRoutes, cleanupExpiredCache } from './routes/tts'
+
 import { createFileRoutes } from './routes/files'
 import { createProvidersRoutes } from './routes/providers'
 import { createOAuthRoutes } from './routes/oauth'
@@ -287,8 +287,6 @@ try {
   await cleanupOrphanedDirectories(db)
   logger.info('Orphaned directory cleanup completed')
 
-  await cleanupExpiredCache()
-
   await ensureDefaultConfigExists()
   await ensureDefaultAgentsMdExists()
 
@@ -312,7 +310,7 @@ app.route('/api/health', createHealthRoutes(db))
 app.route('/api/files', createFileRoutes())
 app.route('/api/providers', createProvidersRoutes())
 app.route('/api/oauth', createOAuthRoutes())
-app.route('/api/tts', createTTSRoutes(db))
+
 app.route('/api/generate-title', createTitleRoutes())
 app.route('/api/sse', createSSERoutes())
 app.route('/api/push', createPushRoutes(db))

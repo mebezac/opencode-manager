@@ -9,7 +9,23 @@ interface CommitsTabProps {
 }
 
 function formatRelativeTime(dateString: string): string {
-  const date = new Date(dateString)
+  if (!dateString) {
+    return ''
+  }
+  
+  let date: Date
+  
+  const isoFormatted = dateString.replace(' ', 'T')
+  date = new Date(isoFormatted)
+  
+  if (isNaN(date.getTime())) {
+    date = new Date(dateString)
+  }
+  
+  if (isNaN(date.getTime())) {
+    return ''
+  }
+  
   const now = new Date()
   const diffMs = now.getTime() - date.getTime()
   const diffSeconds = Math.floor(diffMs / 1000)

@@ -9,7 +9,7 @@ import { SettingsDialog } from './components/settings/SettingsDialog'
 import { useSettingsDialog } from './hooks/useSettingsDialog'
 import { useTheme } from './hooks/useTheme'
 import { usePWA } from './hooks/usePWA'
-import { TTSProvider } from './contexts/TTSContext'
+
 import { EventProvider, usePermissions } from '@/contexts/EventContext'
 import { PermissionRequestDialog } from './components/session/PermissionRequestDialog'
 import { NotificationPermissionPrompt } from './components/notifications/NotificationPermissionPrompt'
@@ -100,14 +100,12 @@ function PermissionDialogWrapper() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TTSProvider>
-        <BrowserRouter>
-          <EventProvider>
-            <RouterContent />
-            <PermissionDialogWrapper />
-          </EventProvider>
-        </BrowserRouter>
-      </TTSProvider>
+      <BrowserRouter>
+        <EventProvider>
+          <RouterContent />
+          <PermissionDialogWrapper />
+        </EventProvider>
+      </BrowserRouter>
     </QueryClientProvider>
   )
 }

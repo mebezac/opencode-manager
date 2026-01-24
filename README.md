@@ -60,18 +60,6 @@ Mobile-first web interface for OpenCode AI agents. Manage, control, and code wit
 - **Enter Key Send** - Press Enter to automatically close keyboard and send messages
 - **Swipe-to-Navigate** - Swipe right from left edge to navigate back
 
-### Text-to-Speech (TTS)
-- **Dual Provider Support** - Browser-native Web Speech API + external OpenAI-compatible endpoints
-- **Browser-Native TTS** - Built-in Web Speech API for instant playback without API keys
-- **AI Message Playback** - Listen to assistant responses with TTS
-- **OpenAI-Compatible** - Works with any OpenAI-compatible TTS endpoint
-- **Voice & Speed Discovery** - Automatic voice detection with caching (1hr TTL)
-- **Voice & Speed Controls** - Configurable voice selection and playback speed
-- **Audio Caching** - 24-hour cache with 200MB limit for performance
-- **Markdown Sanitization** - Filters unreadable symbols for smooth playback
-- **Floating Controls** - Persistent stop button for audio control
-- **Custom Endpoints** - Connect to local or self-hosted TTS services
-
 ## Screenshots
 
 <table>
