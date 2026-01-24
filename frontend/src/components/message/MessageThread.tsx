@@ -247,7 +247,6 @@ const state = latestTodoPart.state
                         partIndex={partIndex}
                         onFileClick={onFileClick}
                         onChildSessionClick={onChildSessionClick}
-                        messageTextContent={msg.info.role === 'assistant' ? messageTextContent : undefined}
                       />
                     </div>
                   ))
