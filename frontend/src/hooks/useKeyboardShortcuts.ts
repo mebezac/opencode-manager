@@ -143,6 +143,7 @@ export function useKeyboardShortcuts(actions: ShortcutActions = {}) {
     const target = e.target as HTMLElement
     const isInInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.contentEditable === 'true'
     const isFileEditor = target.getAttribute('data-file-editor') === 'true'
+    const hasSuggestionsOpen = target.getAttribute('data-suggestions-open') === 'true'
     
     if (isFileEditor) return
 
@@ -180,6 +181,9 @@ export function useKeyboardShortcuts(actions: ShortcutActions = {}) {
     
     if (directAction) {
       if (isInInput && directAction !== 'submit' && directAction !== 'abort') {
+        return
+      }
+      if (hasSuggestionsOpen && (directAction === 'submit' || directAction === 'abort')) {
         return
       }
       executeAction(directAction, e)
