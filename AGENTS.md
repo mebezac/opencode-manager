@@ -11,6 +11,11 @@ At the beginning of a conversation, if we're not on the main branch:
 - Ask the user if we should create a new branch for the work
 - Suggest a descriptive branch name based on the task (e.g., `feat/add-settings-page`, `fix/database-connection`)
 
+**Creating new branches:**
+- ALWAYS base new branches off `main`
+- Before creating a new branch, ensure you're on `main` by running `git checkout main`
+- If currently on a different branch, switch to `main` first before creating the new branch
+
 ### Conventional Commits
 All commits MUST follow the Conventional Commits specification:
 
