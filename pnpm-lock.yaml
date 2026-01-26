@@ -237,7 +237,7 @@ importers:
         specifier: ^0.4.26
         version: 0.4.26(eslint@9.39.2(jiti@2.6.1))
       globals:
-        specifier: ^17.0.0
+        specifier: ^17.1.0
         version: 17.1.0
       jsdom:
         specifier: ^27.4.0
