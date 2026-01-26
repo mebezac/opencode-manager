@@ -431,8 +431,6 @@ export const PromptInput = forwardRef<PromptInputHandle, PromptInputProps>(funct
       } catch {
       }
 
-      event.preventDefault()
-
       try {
         const clipboardItems = await navigator.clipboard.read()
         let hasImageContent = false
@@ -441,7 +439,6 @@ export const PromptInput = forwardRef<PromptInputHandle, PromptInputProps>(funct
           for (const type of item.types) {
             if (ACCEPTED_FILE_TYPES.includes(type) || type.startsWith('image/')) {
               hasImageContent = true
-              event.preventDefault()
               try {
                 const blob = await item.getType(type)
                 const file = new File([blob], `pasted-${Date.now()}.${type.split('/')[1]}`, { type })
@@ -453,6 +450,7 @@ export const PromptInput = forwardRef<PromptInputHandle, PromptInputProps>(funct
           }
         }
         if (hasImageContent) {
+          event.preventDefault()
           return
         }
       } catch (error) {
