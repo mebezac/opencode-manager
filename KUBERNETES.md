@@ -6,10 +6,12 @@ OpenCode Manager supports Kubernetes integration for creating isolated testing e
 
 The Kubernetes integration allows you to:
 - Create and manage ephemeral pods for testing code in isolated environments
+- Create Kubernetes Services for inter-pod networking
 - Execute commands inside running pods
 - View pod status and logs
 - Clean up old pods automatically
 - Use prebuilt container images instead of installing dependencies locally
+- Set up multi-pod environments (e.g., database + application)
 
 ## Prerequisites
 
@@ -44,7 +46,7 @@ metadata:
   namespace: opencode-testing
 rules:
 - apiGroups: [""]
-  resources: ["pods", "pods/log", "pods/exec"]
+  resources: ["pods", "pods/log", "pods/exec", "services"]
   verbs: ["get", "list", "create", "delete", "exec"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -126,9 +128,42 @@ POST /api/kubernetes/pods
   "image": "node:20-alpine",
   "command": ["sh"],
   "mountPath": "/workspace",
-  "hostPath": "/path/to/workspace"
+  "hostPath": "/path/to/workspace",
+  "labels": {
+    "app": "test-runner"
+  }
 }
 ```
+
+The `labels` field is optional but useful for creating Services that target specific pods.
+
+### Creating Services
+
+Services expose pods and enable inter-pod networking:
+
+```bash
+POST /api/kubernetes/services
+{
+  "name": "my-service",
+  "namespace": "opencode-testing",
+  "selector": {
+    "app": "test-runner"
+  },
+  "ports": [
+    {
+      "port": 8080,
+      "targetPort": 8080,
+      "protocol": "TCP"
+    }
+  ],
+  "type": "ClusterIP"
+}
+```
+
+Service types:
+- **ClusterIP** (default): Internal cluster IP only
+- **NodePort**: Exposes service on each node's IP at a static port
+- **LoadBalancer**: Creates an external load balancer (cloud provider dependent)
 
 ### Managing Pods
 
@@ -153,6 +188,10 @@ Once connected, you can:
 | `/api/kubernetes/pods/:name/logs` | GET | Get pod logs |
 | `/api/kubernetes/pods/:name/exec` | POST | Execute command in pod |
 | `/api/kubernetes/cleanup` | POST | Delete old completed pods |
+| `/api/kubernetes/services` | GET | List services in namespace |
+| `/api/kubernetes/services` | POST | Create new service |
+| `/api/kubernetes/services/:name` | GET | Get service details |
+| `/api/kubernetes/services/:name` | DELETE | Delete service |
 
 ## Security
 
@@ -236,21 +275,56 @@ POST /api/kubernetes/pods
 }
 ```
 
-### Database Integration Testing
+### Multi-Pod Database Integration Testing
 
-Create a pod with database access for integration tests:
+Create a complete postgres + application testing environment:
 
 ```bash
+# 1. Create postgres pod with custom label
 POST /api/kubernetes/pods
 {
-  "name": "db-test",
+  "name": "postgres-db",
+  "namespace": "opencode-testing",
+  "image": "postgres:15-alpine",
+  "labels": {
+    "app": "postgres"
+  },
+  "env": {
+    "POSTGRES_PASSWORD": "test123",
+    "POSTGRES_DB": "myapp"
+  }
+}
+
+# 2. Create service to expose postgres
+POST /api/kubernetes/services
+{
+  "name": "postgres-service",
+  "namespace": "opencode-testing",
+  "selector": {
+    "app": "postgres"
+  },
+  "ports": [
+    {
+      "port": 5432,
+      "targetPort": 5432
+    }
+  ]
+}
+
+# 3. Create app pod that connects via service DNS
+POST /api/kubernetes/pods
+{
+  "name": "app-test",
   "namespace": "opencode-testing",
   "image": "node:20-alpine",
   "env": {
-    "DATABASE_URL": "postgres://user:pass@postgres:5432/db"
-  }
+    "DATABASE_URL": "postgresql://postgres:test123@postgres-service:5432/myapp"
+  },
+  "command": ["npm", "test"]
 }
 ```
+
+The app pod can now connect to postgres using the DNS name `postgres-service`, which Kubernetes automatically resolves to the postgres pod's IP address.
 
 ## Additional Resources
 
