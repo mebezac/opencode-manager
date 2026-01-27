@@ -174,6 +174,77 @@ gh repo view
 - Works seamlessly with private repositories
 - No manual token management needed
 
+## Kubernetes Integration
+
+**Kubernetes** pod management is available for creating isolated testing environments:
+
+### When to Use
+- Testing code in isolated, clean environments
+- Running integration tests that need specific dependencies
+- Executing commands in containerized environments
+- Testing deployment configurations
+
+### Prerequisites
+The Kubernetes integration must be enabled in Settings > Kubernetes:
+1. Enable the integration toggle
+2. Configure the namespace (default: \`opencode-testing\`)
+3. Optionally set a custom kubeconfig path
+4. Test the connection to verify cluster access
+
+### Available Operations
+
+**Create a pod:**
+\`\`\`bash
+curl -X POST http://localhost:5001/api/kubernetes/pods \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "name": "test-environment",
+    "namespace": "opencode-testing",
+    "image": "node:20-alpine",
+    "command": ["/bin/sh"],
+    "args": ["-c", "sleep 3600"]
+  }'
+\`\`\`
+
+**List pods:**
+\`\`\`bash
+curl http://localhost:5001/api/kubernetes/pods?namespace=opencode-testing
+\`\`\`
+
+**Execute command in pod:**
+\`\`\`bash
+curl -X POST http://localhost:5001/api/kubernetes/pods/test-environment/exec \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "namespace": "opencode-testing",
+    "command": ["npm", "test"]
+  }'
+\`\`\`
+
+**Get pod logs:**
+\`\`\`bash
+curl http://localhost:5001/api/kubernetes/pods/test-environment/logs?namespace=opencode-testing&tailLines=100
+\`\`\`
+
+**Delete pod:**
+\`\`\`bash
+curl -X DELETE http://localhost:5001/api/kubernetes/pods/test-environment?namespace=opencode-testing
+\`\`\`
+
+**Cleanup old completed pods:**
+\`\`\`bash
+curl -X POST http://localhost:5001/api/kubernetes/cleanup \\
+  -H "Content-Type: application/json" \\
+  -d '{"namespace": "opencode-testing"}'
+\`\`\`
+
+### Important Notes
+- All pods created are labeled with \`managed-by=opencode-manager\`
+- Pods use \`restartPolicy: Never\` by default
+- The container name is always \`runner\`
+- Only namespace-scoped operations are allowed (no cluster-wide access)
+- Requires proper RBAC permissions in the Kubernetes cluster
+
 ## General Guidelines
 
 - This file is merged with any AGENTS.md files in individual repositories
