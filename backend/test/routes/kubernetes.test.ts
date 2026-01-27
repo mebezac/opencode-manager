@@ -11,6 +11,10 @@ const {
   mockExecInPod,
   mockGetPodLogs,
   mockCleanupOldPods,
+  mockCreateService,
+  mockDeleteService,
+  mockGetService,
+  mockListServices,
   mockIsEnabled,
   mockGetCurrentNamespace,
   mockUpdateConfig,
@@ -25,6 +29,10 @@ const {
   mockExecInPod: vi.fn(),
   mockGetPodLogs: vi.fn(),
   mockCleanupOldPods: vi.fn(),
+  mockCreateService: vi.fn(),
+  mockDeleteService: vi.fn(),
+  mockGetService: vi.fn(),
+  mockListServices: vi.fn(),
   mockIsEnabled: vi.fn().mockReturnValue(true),
   mockGetCurrentNamespace: vi.fn().mockReturnValue('test-namespace'),
   mockUpdateConfig: vi.fn(),
@@ -49,6 +57,10 @@ vi.mock('../../src/services/kubernetes', () => ({
     execInPod: mockExecInPod,
     getPodLogs: mockGetPodLogs,
     cleanupOldPods: mockCleanupOldPods,
+    createService: mockCreateService,
+    deleteService: mockDeleteService,
+    getService: mockGetService,
+    listServices: mockListServices,
     isEnabled: mockIsEnabled,
     getCurrentNamespace: mockGetCurrentNamespace,
     updateConfig: mockUpdateConfig,
@@ -354,6 +366,130 @@ describe('Kubernetes Routes', () => {
       expect(data.deleted).toBe(5)
       expect(captured.namespace).toBe('test-namespace')
       expect(captured.maxAgeMs).toBe(86400000)
+    })
+  })
+
+  describe('GET /services', () => {
+    it('should return list of services', async () => {
+      const mockServices = [
+        {
+          name: 'postgres-service',
+          namespace: 'test-namespace',
+          type: 'ClusterIP',
+          clusterIP: '10.0.0.1',
+          ports: [{ port: 5432, targetPort: 5432, protocol: 'TCP' }],
+          selector: { app: 'postgres' },
+          age: 60000,
+        },
+      ]
+      mockListServices.mockResolvedValue(mockServices)
+
+      const response = await app.request(
+        '/services?namespace=test-namespace',
+        { method: 'GET' }
+      )
+
+      expect(response.status).toBe(200)
+      const data = await response.json()
+      expect(data.services).toEqual(mockServices)
+    })
+  })
+
+  describe('GET /services/:name', () => {
+    it('should return service details', async () => {
+      const mockService = {
+        metadata: { name: 'postgres-service' },
+        spec: {
+          type: 'ClusterIP',
+          clusterIP: '10.0.0.1',
+          selector: { app: 'postgres' },
+          ports: [{ port: 5432 }],
+        },
+      }
+      mockGetService.mockResolvedValue(mockService as any)
+
+      const response = await app.request(
+        '/services/postgres-service?namespace=test-namespace',
+        { method: 'GET' }
+      )
+
+      expect(response.status).toBe(200)
+      const data = await response.json()
+      expect(data.service).toEqual(mockService)
+    })
+
+    it('should return 404 if service not found', async () => {
+      mockGetService.mockResolvedValue(null)
+
+      const response = await app.request(
+        '/services/non-existent?namespace=test-namespace',
+        { method: 'GET' }
+      )
+
+      expect(response.status).toBe(404)
+    })
+
+    it('should return 400 if namespace not provided', async () => {
+      const response = await app.request('/services/test-service', {
+        method: 'GET',
+      })
+
+      expect(response.status).toBe(400)
+    })
+  })
+
+  describe('POST /services', () => {
+    it('should create a new service', async () => {
+      mockCreateService.mockResolvedValue('postgres-service')
+
+      const response = await app.request('/services', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: 'postgres-service',
+          namespace: 'test-namespace',
+          selector: { app: 'postgres' },
+          ports: [{ port: 5432, targetPort: 5432 }],
+          type: 'ClusterIP',
+        }),
+      })
+
+      expect(response.status).toBe(200)
+      const data = await response.json()
+      expect(data.success).toBe(true)
+      expect(data.serviceName).toBe('postgres-service')
+    })
+  })
+
+  describe('DELETE /services/:name', () => {
+    it('should delete a service', async () => {
+      mockDeleteService.mockResolvedValue(true)
+
+      const response = await app.request('/services/postgres-service?namespace=test-namespace', {
+        method: 'DELETE',
+      })
+
+      expect(response.status).toBe(200)
+      const data = await response.json()
+      expect(data.success).toBe(true)
+    })
+
+    it('should return 500 on deletion failure', async () => {
+      mockDeleteService.mockResolvedValue(false)
+
+      const response = await app.request('/services/postgres-service?namespace=test-namespace', {
+        method: 'DELETE',
+      })
+
+      expect(response.status).toBe(500)
+    })
+
+    it('should return 400 if namespace not provided', async () => {
+      const response = await app.request('/services/test-service', {
+        method: 'DELETE',
+      })
+
+      expect(response.status).toBe(400)
     })
   })
 })

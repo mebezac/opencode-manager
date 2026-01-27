@@ -21,11 +21,27 @@ const CreatePodSchema = z.object({
   env: z.record(z.string(), z.string()).optional(),
   mountPath: z.string().optional(),
   hostPath: z.string().optional(),
+  labels: z.record(z.string(), z.string()).optional(),
 })
 
 const ExecPodSchema = z.object({
   namespace: z.string().min(1),
   command: z.array(z.string().min(1)),
+})
+
+const ServicePortSchema = z.object({
+  name: z.string().optional(),
+  port: z.number().int().min(1).max(65535),
+  targetPort: z.number().int().min(1).max(65535).optional(),
+  protocol: z.enum(['TCP', 'UDP', 'SCTP']).optional(),
+})
+
+const CreateServiceSchema = z.object({
+  name: z.string().min(1),
+  namespace: z.string().min(1),
+  selector: z.record(z.string(), z.string()),
+  ports: z.array(ServicePortSchema).min(1),
+  type: z.enum(['ClusterIP', 'NodePort', 'LoadBalancer']).optional(),
 })
 
 export function createKubernetesRoutes(db: Database) {
@@ -169,6 +185,7 @@ export function createKubernetesRoutes(db: Database) {
             ]
           : undefined,
         env: validated.env as Record<string, string>,
+        labels: validated.labels,
       })
 
       return c.json({ success: true, podName })
@@ -289,6 +306,92 @@ export function createKubernetesRoutes(db: Database) {
         return c.json({ error: 'Invalid request data', details: error.issues }, 400)
       }
       return c.json({ error: 'Failed to cleanup pods' }, 500)
+    }
+  })
+
+  app.get('/services', async (c) => {
+    try {
+      const namespace = c.req.query('namespace')
+      const labelSelector = c.req.query('labelSelector')
+
+      const services = await kubernetesService.listServices(namespace, labelSelector)
+      return c.json({ services })
+    } catch (error) {
+      logger.error('Failed to list services:', error)
+      return c.json({ error: 'Failed to list services' }, 500)
+    }
+  })
+
+  app.get('/services/:name', async (c) => {
+    try {
+      const name = c.req.param('name')
+      const namespace = c.req.query('namespace')
+
+      if (!namespace) {
+        return c.json({ error: 'Namespace query parameter required' }, 400)
+      }
+
+      const service = await kubernetesService.getService(name, namespace)
+
+      if (!service) {
+        return c.json({ error: 'Service not found' }, 404)
+      }
+
+      return c.json({ service })
+    } catch (error) {
+      logger.error('Failed to get service:', error)
+      return c.json({ error: 'Failed to get service' }, 500)
+    }
+  })
+
+  app.post('/services', async (c) => {
+    try {
+      const body = await c.req.json()
+      const validated = CreateServiceSchema.parse(body)
+
+      const serviceName = await kubernetesService.createService({
+        name: validated.name,
+        namespace: validated.namespace,
+        selector: validated.selector,
+        ports: validated.ports,
+        type: validated.type,
+      })
+
+      return c.json({ success: true, serviceName })
+    } catch (error) {
+      logger.error('Failed to create service:', error)
+      if (error instanceof z.ZodError) {
+        return c.json({ error: 'Invalid service data', details: error.issues }, 400)
+      }
+      return c.json(
+        {
+          error: 'Failed to create service',
+          details: error instanceof Error ? error.message : 'Unknown error',
+        },
+        500
+      )
+    }
+  })
+
+  app.delete('/services/:name', async (c) => {
+    try {
+      const name = c.req.param('name')
+      const namespace = c.req.query('namespace')
+
+      if (!namespace) {
+        return c.json({ error: 'Namespace query parameter required' }, 400)
+      }
+
+      const success = await kubernetesService.deleteService(name, namespace)
+
+      if (!success) {
+        return c.json({ error: 'Failed to delete service' }, 500)
+      }
+
+      return c.json({ success: true })
+    } catch (error) {
+      logger.error('Failed to delete service:', error)
+      return c.json({ error: 'Failed to delete service' }, 500)
     }
   })
 

@@ -36,6 +36,36 @@ interface CreatePodOptions {
     }
   }>
   env?: Record<string, string>
+  labels?: Record<string, string>
+}
+
+interface ServicePort {
+  name?: string
+  port: number
+  targetPort?: number
+  protocol?: string
+}
+
+interface CreateServiceOptions {
+  name: string
+  namespace: string
+  selector: Record<string, string>
+  ports: ServicePort[]
+  type?: 'ClusterIP' | 'NodePort' | 'LoadBalancer'
+}
+
+interface ServiceStatus {
+  name: string
+  namespace: string
+  type: string
+  clusterIP?: string
+  ports: Array<{
+    port: number
+    targetPort: number
+    protocol: string
+  }>
+  selector: Record<string, string>
+  age: number
 }
 
 export class KubernetesService {
@@ -118,7 +148,8 @@ export class KubernetesService {
         namespace: options.namespace,
         labels: {
           app: 'opencode-manager',
-          'managed-by': 'opencode-manager'
+          'managed-by': 'opencode-manager',
+          ...options.labels
         }
       },
       spec: {
@@ -319,6 +350,120 @@ export class KubernetesService {
     } catch (error) {
       logger.error('Failed to cleanup old pods:', error)
       return 0
+    }
+  }
+
+  async createService(options: CreateServiceOptions): Promise<string> {
+    if (!this.coreV1Api) {
+      throw new Error('Kubernetes client not initialized')
+    }
+
+    const service: k8s.V1Service = {
+      metadata: {
+        name: options.name,
+        namespace: options.namespace,
+        labels: {
+          'managed-by': 'opencode-manager'
+        }
+      },
+      spec: {
+        selector: options.selector,
+        type: options.type || 'ClusterIP',
+        ports: options.ports.map(p => ({
+          name: p.name,
+          port: p.port,
+          targetPort: p.targetPort || p.port,
+          protocol: p.protocol || 'TCP'
+        }))
+      }
+    }
+
+    try {
+      const result = await this.coreV1Api.createNamespacedService({
+        namespace: options.namespace,
+        body: service
+      })
+      logger.info(`Created service: ${options.name} in namespace: ${options.namespace}`)
+      return (result as any).metadata?.name || options.name
+    } catch (error) {
+      logger.error(`Failed to create service ${options.name}:`, error)
+      throw error
+    }
+  }
+
+  async deleteService(name: string, namespace: string): Promise<boolean> {
+    if (!this.coreV1Api) {
+      throw new Error('Kubernetes client not initialized')
+    }
+
+    try {
+      await this.coreV1Api.deleteNamespacedService({
+        name,
+        namespace
+      })
+      logger.info(`Deleted service: ${name} from namespace: ${namespace}`)
+      return true
+    } catch (error) {
+      logger.error(`Failed to delete service ${name}:`, error)
+      return false
+    }
+  }
+
+  async getService(name: string, namespace: string): Promise<k8s.V1Service | null> {
+    if (!this.coreV1Api) {
+      throw new Error('Kubernetes client not initialized')
+    }
+
+    try {
+      const result = await this.coreV1Api.readNamespacedService({
+        name,
+        namespace
+      })
+      return (result as any)
+    } catch (error) {
+      logger.error(`Failed to get service ${name}:`, error)
+      return null
+    }
+  }
+
+  async listServices(namespace?: string, labelSelector?: string): Promise<ServiceStatus[]> {
+    if (!this.coreV1Api) {
+      throw new Error('Kubernetes client not initialized')
+    }
+
+    const targetNamespace = namespace || this.config.namespace || 'default'
+
+    try {
+      const response = await this.coreV1Api.listNamespacedService({
+        namespace: targetNamespace,
+        labelSelector
+      })
+
+      const items = (response as any).items || []
+
+      return items.map((service: k8s.V1Service) => {
+        const creationTime = service.metadata?.creationTimestamp 
+          ? new Date(service.metadata.creationTimestamp).getTime() 
+          : Date.now()
+        const age = Date.now() - creationTime
+
+        return {
+          name: service.metadata?.name || '',
+          namespace: service.metadata?.namespace || '',
+          type: service.spec?.type || 'ClusterIP',
+          clusterIP: service.spec?.clusterIP,
+          ports: service.spec?.ports?.map((p: any) => ({
+            port: p.port,
+            targetPort: p.targetPort,
+            protocol: p.protocol || 'TCP'
+          })) || [],
+          selector: service.spec?.selector || {},
+          age
+        }
+      })
+    } catch (error) {
+      logger.error('Failed to list services:', error)
+      return []
     }
   }
 
