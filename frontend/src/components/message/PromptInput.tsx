@@ -9,6 +9,7 @@ import { useVariants } from '@/hooks/useVariants'
 
 import { useUserBash } from '@/stores/userBashStore'
 import { useMobile } from '@/hooks/useMobile'
+import { useKeyboardVisibility } from '@/hooks/useKeyboardVisibility'
 import { useSessionStatusForSession } from '@/stores/sessionStatusStore'
 import { usePermissions } from '@/contexts/EventContext'
 import { ChevronDown, Upload, X } from 'lucide-react'
@@ -423,14 +424,21 @@ export const PromptInput = forwardRef<PromptInputHandle, PromptInputProps>(funct
 
     if (isIOS && isSecureContext && navigator.clipboard && navigator.clipboard.read) {
       try {
+        const text = await navigator.clipboard.readText()
+        if (text && text.trim()) {
+          return
+        }
+      } catch {
+      }
+
+      try {
         const clipboardItems = await navigator.clipboard.read()
         let hasImageContent = false
-        
+
         for (const item of clipboardItems) {
           for (const type of item.types) {
             if (ACCEPTED_FILE_TYPES.includes(type) || type.startsWith('image/')) {
               hasImageContent = true
-              event.preventDefault()
               try {
                 const blob = await item.getType(type)
                 const file = new File([blob], `pasted-${Date.now()}.${type.split('/')[1]}`, { type })
@@ -442,6 +450,7 @@ export const PromptInput = forwardRef<PromptInputHandle, PromptInputProps>(funct
           }
         }
         if (hasImageContent) {
+          event.preventDefault()
           return
         }
       } catch (error) {
@@ -597,9 +606,16 @@ export const PromptInput = forwardRef<PromptInputHandle, PromptInputProps>(funct
       }
     }
     
-    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-      e.preventDefault()
-      handleSubmit()
+    if (e.key === 'Enter') {
+      if (e.metaKey || e.ctrlKey) {
+        e.preventDefault()
+        handleSubmit()
+      } else if (!e.shiftKey) {
+        const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent)
+        if (isIOS) {
+          return
+        }
+      }
     } else if (e.key === 'Escape') {
       setShowSuggestions(false)
       setSuggestionQuery('')
@@ -690,6 +706,7 @@ const { model, modelString } = useModelSelection(opcodeUrl, directory)
   const currentModel = modelString || ''
   const displayModelName = model?.modelID || currentModel
   const isMobile = useMobile()
+  const { isKeyboardVisible } = useKeyboardVisibility()
   const { setShowDialog, hasForSession: hasPermissionsForSession } = usePermissions()
   const hasPendingPermissionForSession = hasPermissionsForSession(sessionID)
   const { hasVariants, currentVariant, cycleVariant } = useVariants(opcodeUrl, directory)
@@ -700,18 +717,27 @@ const { model, modelString } = useModelSelection(opcodeUrl, directory)
   const showStopButton = isSessionActive && hasIncompleteMessages
   const hideSecondaryButtons = isMobile && hasActiveStream
   
-  // Handle iOS keyboard focus
   const handleFocus = () => {
-    if (isMobile && /iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+    setIsFocused(true)
+    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent)
+    if (isIOS) {
       setTimeout(() => {
-        textareaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
-      }, 200)
+        if (textareaRef.current) {
+          textareaRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
+          window.scrollTo({ 
+            top: document.documentElement.scrollHeight, 
+            behavior: 'smooth' 
+          })
+        }
+      }, 300)
     }
   }
 
-  
-
-  
+  useEffect(() => {
+    if (isKeyboardVisible && textareaRef.current && isFocused) {
+      textareaRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+  }, [isKeyboardVisible, isFocused])
 
   
 
@@ -751,11 +777,10 @@ return (
             : "Send a message..."
         }
         disabled={disabled}
-         onFocus={() => {
-           setIsFocused(true)
-           handleFocus()
-         }}
-         onBlur={() => setIsFocused(false)}
+        onFocus={handleFocus}
+        onBlur={() => setIsFocused(false)}
+        enterKeyHint="enter"
+        data-suggestions-open={showMentionSuggestions || showSuggestions ? 'true' : undefined}
         className={`w-full bg-muted/50 pl-2 md:pl-3 pr-3 py-2 text-[16px] text-foreground placeholder-muted-foreground focus:outline-none focus:bg-muted/70 resize-none min-h-[40px] max-h-[120px] disabled:opacity-50 disabled:cursor-not-allowed md:text-sm rounded-lg ${
           isBashMode
             ? 'border-purple-500/50 bg-purple-500/5 focus:bg-purple-500/10'

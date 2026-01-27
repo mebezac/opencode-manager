@@ -1,9 +1,9 @@
 {
   "name": "opencode-manager",
-  "version": "0.6.2",
+  "version": "0.9.0",
   "private": true,
   "type": "module",
-  "packageManager": "pnpm@10.28.0",
+  "packageManager": "pnpm@10.28.1",
   "pnpm": {
     "onlyBuiltDependencies": []
   },

@@ -6,9 +6,11 @@ import os from 'os'
 import path from 'path'
 import { initializeDatabase } from './db/schema'
 import { createRepoRoutes } from './routes/repos'
+import { createIPCServer, type IPCServer } from './ipc/ipcServer'
+import { GitAuthService } from './services/git-auth'
 import { createSettingsRoutes } from './routes/settings'
 import { createHealthRoutes } from './routes/health'
-import { createTTSRoutes, cleanupExpiredCache } from './routes/tts'
+
 import { createFileRoutes } from './routes/files'
 import { createProvidersRoutes } from './routes/providers'
 import { createOAuthRoutes } from './routes/oauth'
@@ -16,6 +18,7 @@ import { createTitleRoutes } from './routes/title'
 import { createSSERoutes } from './routes/sse'
 import { createPushRoutes } from './routes/push'
 import { createKubernetesRoutes } from './routes/kubernetes'
+import { createFavoritesRoutes } from './routes/favorites'
 import { sseAggregator } from './services/sse-aggregator'
 import { ensureDirectoryExists, writeFileContent, fileExists, readFileContent } from './services/file-operations'
 import { SettingsService } from './services/settings'
@@ -47,6 +50,9 @@ app.use('/*', cors({
 }))
 
 const db = initializeDatabase(DB_PATH)
+
+let ipcServer: IPCServer | undefined
+const gitAuthService = new GitAuthService()
 
 export const DEFAULT_AGENTS_MD = `# OpenCode Manager - Global Agent Instructions
 
@@ -282,13 +288,15 @@ try {
   await cleanupOrphanedDirectories(db)
   logger.info('Orphaned directory cleanup completed')
 
-  await cleanupExpiredCache()
-
   await ensureDefaultConfigExists()
   await ensureDefaultAgentsMdExists()
 
   const settingsService = new SettingsService(db)
   settingsService.initializeLastKnownGoodConfig()
+
+  ipcServer = await createIPCServer(process.env.STORAGE_PATH || undefined)
+  gitAuthService.initialize(ipcServer, db)
+  logger.info(`Git IPC server running at ${ipcServer.ipcHandlePath}`)
 
   opencodeServerManager.setDatabase(db)
   await opencodeServerManager.start()
@@ -297,17 +305,18 @@ try {
   logger.error('Failed to initialize workspace:', error)
 }
 
-app.route('/api/repos', createRepoRoutes(db))
+app.route('/api/repos', createRepoRoutes(db, gitAuthService))
 app.route('/api/settings', createSettingsRoutes(db))
 app.route('/api/health', createHealthRoutes(db))
 app.route('/api/files', createFileRoutes())
 app.route('/api/providers', createProvidersRoutes())
 app.route('/api/oauth', createOAuthRoutes())
-app.route('/api/tts', createTTSRoutes(db))
+
 app.route('/api/generate-title', createTitleRoutes())
 app.route('/api/sse', createSSERoutes())
 app.route('/api/push', createPushRoutes(db))
 app.route('/api/kubernetes', createKubernetesRoutes(db))
+app.route('/api/favorites', createFavoritesRoutes(db))
 
 app.all('/api/opencode/*', async (c) => {
   const request = c.req.raw
@@ -377,11 +386,15 @@ let isShuttingDown = false
 const shutdown = async (signal: string) => {
   if (isShuttingDown) return
   isShuttingDown = true
-  
+
   logger.info(`${signal} received, shutting down gracefully...`)
   try {
     sseAggregator.shutdown()
     logger.info('SSE Aggregator stopped')
+    if (ipcServer) {
+      ipcServer.dispose()
+      logger.info('Git IPC server stopped')
+    }
     await opencodeServerManager.stop()
     logger.info('OpenCode server stopped')
   } catch (error) {
@@ -393,10 +406,12 @@ const shutdown = async (signal: string) => {
 process.on('SIGTERM', () => shutdown('SIGTERM'))
 process.on('SIGINT', () => shutdown('SIGINT'))
 
-serve({
+const server = serve({
   fetch: app.fetch,
   port: PORT,
   hostname: HOST,
 })
+
+server.timeout = 900000
 
 logger.info(`🚀 OpenCode WebUI API running on http://${HOST}:${PORT}`)

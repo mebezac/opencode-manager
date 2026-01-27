@@ -10,9 +10,10 @@ Mobile-first web interface for OpenCode AI agents. Manage, control, and code wit
 - **Worktree Support** - Create and manage Git worktrees for working on multiple branches
 
 ### Git Integration
+- **Source Control Panel** - Comprehensive Git operations in a modal interface with tabs for Changes, Commits, and Branches
 - **Git Diff Viewer** - View file changes with unified diff, line numbers, and addition/deletion counts
 - **Git Status Panel** - See all uncommitted changes (modified, added, deleted, renamed, untracked)
-- **Branch Switching** - Switch between branches via dropdown
+- **Branch Management** - Switch, create, and manage branches through the Source Control Panel
 - **Branch/Worktree Creation** - Create new branch workspaces from any repository
 - **Ahead/Behind Tracking** - Shows commits ahead/behind remote
 - **Push PRs to GitHub** - Create and push pull requests directly from your phone
@@ -59,18 +60,6 @@ Mobile-first web interface for OpenCode AI agents. Manage, control, and code wit
 - **Enter Key Send** - Press Enter to automatically close keyboard and send messages
 - **Swipe-to-Navigate** - Swipe right from left edge to navigate back
 
-### Text-to-Speech (TTS)
-- **Dual Provider Support** - Browser-native Web Speech API + external OpenAI-compatible endpoints
-- **Browser-Native TTS** - Built-in Web Speech API for instant playback without API keys
-- **AI Message Playback** - Listen to assistant responses with TTS
-- **OpenAI-Compatible** - Works with any OpenAI-compatible TTS endpoint
-- **Voice & Speed Discovery** - Automatic voice detection with caching (1hr TTL)
-- **Voice & Speed Controls** - Configurable voice selection and playback speed
-- **Audio Caching** - 24-hour cache with 200MB limit for performance
-- **Markdown Sanitization** - Filters unreadable symbols for smooth playback
-- **Floating Controls** - Persistent stop button for audio control
-- **Custom Endpoints** - Connect to local or self-hosted TTS services
-
 ## Screenshots
 
 <table>
@@ -103,6 +92,8 @@ Mobile-first web interface for OpenCode AI agents. Manage, control, and code wit
 ## Coming Soon
 
 -  **Authentication** - User authentication and session management
+
+See the [Roadmap](ROADMAP.md) for planned features and future development.
 
 ## Installation
 

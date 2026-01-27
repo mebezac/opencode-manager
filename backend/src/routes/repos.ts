@@ -3,19 +3,22 @@ import type { ContentfulStatusCode } from 'hono/utils/http-status'
 import type { Database } from 'bun:sqlite'
 import * as db from '../db/queries'
 import * as repoService from '../services/repo'
-import { GitAuthenticationError } from '../services/repo'
-import * as gitOperations from '../services/git-operations'
 import * as archiveService from '../services/archive'
 import { SettingsService } from '../services/settings'
 import { writeFileContent } from '../services/file-operations'
 import { opencodeServerManager } from '../services/opencode-single-server'
+import { proxyToOpenCodeWithDirectory } from '../services/proxy'
 import { logger } from '../utils/logger'
 import { getErrorMessage, getStatusCode } from '../utils/error-utils'
 import { getOpenCodeConfigFilePath, getReposPath } from '@opencode-manager/shared/config/env'
+import { createRepoGitRoutes } from './repo-git'
+import type { GitAuthService } from '../services/git-auth'
 import path from 'path'
 
-export function createRepoRoutes(database: Database) {
+export function createRepoRoutes(database: Database, gitAuthService: GitAuthService) {
   const app = new Hono()
+
+  app.route('/', createRepoGitRoutes(database, gitAuthService))
 
   app.post('/', async (c) => {
     try {
@@ -32,12 +35,14 @@ export function createRepoRoutes(database: Database) {
       if (localPath) {
         repo = await repoService.initLocalRepo(
           database,
+          gitAuthService,
           localPath,
           branch
         )
       } else {
         repo = await repoService.cloneRepo(
           database,
+          gitAuthService,
           repoUrl!,
           branch,
           useWorktree
@@ -71,7 +76,8 @@ app.get('/', async (c) => {
 
       const reposWithCurrentBranch = await Promise.all(
         repos.map(async (repo) => {
-          const currentBranch = await repoService.getCurrentBranch(repo)
+          const env = gitAuthService.getGitEnvironment()
+          const currentBranch = await repoService.getCurrentBranch(repo, env)
           return { ...repo, currentBranch }
         })
       )
@@ -111,7 +117,7 @@ app.get('/', async (c) => {
         return c.json({ error: 'Repo not found' }, 404)
       }
       
-      const currentBranch = await repoService.getCurrentBranch(repo)
+      const currentBranch = await repoService.getCurrentBranch(repo, gitAuthService.getGitEnvironment())
       
       return c.json({ ...repo, currentBranch })
     } catch (error: unknown) {
@@ -141,7 +147,7 @@ app.get('/', async (c) => {
   app.post('/:id/pull', async (c) => {
     try {
       const id = parseInt(c.req.param('id'))
-      await repoService.pullRepo(database, id)
+      await repoService.pullRepo(database, gitAuthService, id)
       
       const repo = db.getRepoById(database, id)
       return c.json(repo)
@@ -211,17 +217,14 @@ app.get('/', async (c) => {
         return c.json({ error: 'branch is required' }, 400)
       }
       
-      await repoService.switchBranch(database, id, branch)
+      await repoService.switchBranch(database, gitAuthService, id, branch)
       
       const updatedRepo = db.getRepoById(database, id)
-      const currentBranch = await repoService.getCurrentBranch(updatedRepo!)
+      const currentBranch = await repoService.getCurrentBranch(updatedRepo!, gitAuthService.getGitEnvironment())
       
       return c.json({ ...updatedRepo, currentBranch })
     } catch (error: unknown) {
       logger.error('Failed to switch branch:', error)
-      if (error instanceof GitAuthenticationError) {
-        return c.json({ error: error.message, code: 'AUTH_FAILED' }, 401)
-      }
       return c.json({ error: getErrorMessage(error) }, 500)
     }
   })
@@ -242,82 +245,14 @@ app.get('/', async (c) => {
         return c.json({ error: 'branch is required' }, 400)
       }
       
-      await repoService.createBranch(database, id, branch)
+      await repoService.createBranch(database, gitAuthService, id, branch)
       
       const updatedRepo = db.getRepoById(database, id)
-      const currentBranch = await repoService.getCurrentBranch(updatedRepo!)
+      const currentBranch = await repoService.getCurrentBranch(updatedRepo!, gitAuthService.getGitEnvironment())
       
       return c.json({ ...updatedRepo, currentBranch })
     } catch (error: unknown) {
       logger.error('Failed to create branch:', error)
-      if (error instanceof GitAuthenticationError) {
-        return c.json({ error: error.message, code: 'AUTH_FAILED' }, 401)
-      }
-      return c.json({ error: getErrorMessage(error) }, 500)
-    }
-  })
-
-  app.get('/:id/branches', async (c) => {
-    try {
-      const id = parseInt(c.req.param('id'))
-      const repo = db.getRepoById(database, id)
-      
-      if (!repo) {
-        return c.json({ error: 'Repo not found' }, 404)
-      }
-      
-       const branches = await repoService.listBranches(database, repo)
-
-      
-      return c.json(branches)
-    } catch (error: unknown) {
-      logger.error('Failed to list branches:', error)
-      return c.json({ error: getErrorMessage(error) }, 500)
-    }
-  })
-
-  app.get('/:id/git/status', async (c) => {
-    try {
-      const id = parseInt(c.req.param('id'))
-      const repo = db.getRepoById(database, id)
-      
-      if (!repo) {
-        return c.json({ error: 'Repo not found' }, 404)
-      }
-      
-      const repoPath = path.resolve(getReposPath(), repo.localPath)
-       const status = await gitOperations.getGitStatus(repoPath, database)
-
-      
-      return c.json(status)
-    } catch (error: unknown) {
-      logger.error('Failed to get git status:', error)
-      return c.json({ error: getErrorMessage(error) }, 500)
-    }
-  })
-
-  app.get('/:id/git/diff', async (c) => {
-    try {
-      const id = parseInt(c.req.param('id'))
-      const filePath = c.req.query('path')
-      
-      if (!filePath) {
-        return c.json({ error: 'path query parameter is required' }, 400)
-      }
-      
-      const repo = db.getRepoById(database, id)
-      
-      if (!repo) {
-        return c.json({ error: 'Repo not found' }, 404)
-      }
-      
-      const repoPath = path.resolve(getReposPath(), repo.localPath)
-       const diff = await gitOperations.getFileDiff(repoPath, filePath, database)
-
-      
-      return c.json(diff)
-    } catch (error: unknown) {
-      logger.error('Failed to get file diff:', error)
       return c.json({ error: getErrorMessage(error) }, 500)
     }
   })
@@ -356,6 +291,35 @@ app.get('/', async (c) => {
       })
     } catch (error: unknown) {
       logger.error('Failed to create repo archive:', error)
+      return c.json({ error: getErrorMessage(error) }, 500)
+    }
+  })
+
+  app.post('/:id/reset-permissions', async (c) => {
+    try {
+      const id = parseInt(c.req.param('id'))
+      const repo = db.getRepoById(database, id)
+      
+      if (!repo) {
+        return c.json({ error: 'Repo not found' }, 404)
+      }
+      
+      const response = await proxyToOpenCodeWithDirectory(
+        '/instance/dispose',
+        'POST',
+        repo.fullPath
+      )
+      
+      if (!response.ok) {
+        const errorText = await response.text()
+        logger.error(`Failed to reset permissions for repo ${id}:`, errorText)
+        return c.json({ error: 'Failed to reset permissions' }, 500)
+      }
+      
+      logger.info(`Reset permissions for repo ${id} (${repo.fullPath})`)
+      return c.json({ success: true })
+    } catch (error: unknown) {
+      logger.error('Failed to reset permissions:', error)
       return c.json({ error: getErrorMessage(error) }, 500)
     }
   })

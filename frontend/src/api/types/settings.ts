@@ -1,16 +1,14 @@
 import {
-  DEFAULT_TTS_CONFIG,
   DEFAULT_KEYBOARD_SHORTCUTS,
   DEFAULT_USER_PREFERENCES,
   DEFAULT_LEADER_KEY,
   DEFAULT_KUBERNETES_CONFIG,
-  type TTSConfig,
   type KubernetesConfig,
   type OpenCodeConfigContent,
 } from '@opencode-manager/shared'
 
-export type { TTSConfig, KubernetesConfig, OpenCodeConfigContent }
-export { DEFAULT_TTS_CONFIG, DEFAULT_KEYBOARD_SHORTCUTS, DEFAULT_USER_PREFERENCES, DEFAULT_LEADER_KEY, DEFAULT_KUBERNETES_CONFIG }
+export type { KubernetesConfig, OpenCodeConfigContent }
+export { DEFAULT_KEYBOARD_SHORTCUTS, DEFAULT_USER_PREFERENCES, DEFAULT_LEADER_KEY, DEFAULT_KUBERNETES_CONFIG }
 
 export interface CustomCommand {
   name: string
@@ -52,7 +50,6 @@ export interface UserPreferences {
   customAgents: CustomAgent[]
   gitCredentials?: GitCredential[]
   gitIdentity?: GitIdentity
-  tts?: TTSConfig
   kubernetesConfig?: KubernetesConfig
   repoOrder?: number[]
 }

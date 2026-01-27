@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { Toaster } from 'sonner'
@@ -8,11 +9,10 @@ import { SettingsDialog } from './components/settings/SettingsDialog'
 import { useSettingsDialog } from './hooks/useSettingsDialog'
 import { useTheme } from './hooks/useTheme'
 import { usePWA } from './hooks/usePWA'
-import { TTSProvider } from './contexts/TTSContext'
+
 import { EventProvider, usePermissions } from '@/contexts/EventContext'
 import { PermissionRequestDialog } from './components/session/PermissionRequestDialog'
 import { NotificationPermissionPrompt } from './components/notifications/NotificationPermissionPrompt'
-import { useEffect, useState } from 'react'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -44,6 +44,15 @@ function RouterContent() {
     localStorage.setItem('notification-prompt-seen', 'true')
   }
 
+  useEffect(() => {
+    const loader = document.getElementById('app-loader')
+    if (loader) {
+      loader.style.transition = 'opacity 0.2s ease-out'
+      loader.style.opacity = '0'
+      setTimeout(() => loader.remove(), 200)
+    }
+  }, [])
+
   return (
     <>
       <Routes>
@@ -57,6 +66,7 @@ function RouterContent() {
         expand={false}
         richColors
         closeButton
+        duration={2500}
       />
       {showNotificationPrompt && (
         <NotificationPermissionPrompt onClose={handleCloseNotificationPrompt} />
@@ -90,14 +100,12 @@ function PermissionDialogWrapper() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TTSProvider>
-        <BrowserRouter>
-          <EventProvider>
-            <RouterContent />
-            <PermissionDialogWrapper />
-          </EventProvider>
-        </BrowserRouter>
-      </TTSProvider>
+      <BrowserRouter>
+        <EventProvider>
+          <RouterContent />
+          <PermissionDialogWrapper />
+        </EventProvider>
+      </BrowserRouter>
     </QueryClientProvider>
   )
 }

@@ -4,11 +4,14 @@ import { DndContext, closestCenter, KeyboardSensor, PointerSensor, TouchSensor, 
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { listRepos, deleteRepo, updateRepoOrder } from "@/api/repos"
+import { fetchReposGitStatus } from "@/api/git"
 import { DeleteDialog } from "@/components/ui/delete-dialog"
 import { ListToolbar } from "@/components/ui/list-toolbar"
-import { Loader2, GitBranch, Search, GripVertical } from "lucide-react"
+import { GitBranch, Search, GripVertical } from "lucide-react"
 import type { Repo } from "@/api/types"
+import type { GitStatusResponse } from "@/types/git"
 import { RepoCard } from "./RepoCard"
+import { RepoCardSkeleton } from "./RepoCardSkeleton"
 
 function SortableRepoCard({
   repo,
@@ -16,12 +19,14 @@ function SortableRepoCard({
   isDeleting,
   isSelected,
   onSelect,
+  gitStatus,
 }: {
   repo: Repo
   onDelete: (id: number) => void
   isDeleting: boolean
   isSelected: boolean
   onSelect: (id: number, selected: boolean) => void
+  gitStatus?: GitStatusResponse
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: repo.id })
 
@@ -44,6 +49,7 @@ function SortableRepoCard({
             isDeleting={isDeleting}
             isSelected={isSelected}
             onSelect={onSelect}
+            gitStatus={gitStatus}
           />
         </div>
       </div>
@@ -65,6 +71,14 @@ export function RepoList() {
   } = useQuery({
     queryKey: ["repos"],
     queryFn: listRepos,
+  })
+
+  const repoIds = repos?.map((repo) => repo.id) || []
+
+  const { data: gitStatuses } = useQuery({
+    queryKey: ["reposGitStatus", repoIds],
+    queryFn: () => fetchReposGitStatus(repoIds),
+    enabled: repoIds.length > 0,
   })
 
   const deleteMutation = useMutation({
@@ -147,8 +161,21 @@ export function RepoList() {
 
   if (isLoading && !repos) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <Loader2 className="w-6 h-6 animate-spin" />
+      <div className="px-0 md:p-4 h-full flex flex-col">
+        <div className="px-2 md:px-0">
+          <div className="h-10 bg-muted/50 animate-pulse rounded w-full" />
+        </div>
+        <div className="mx-2 md:mx-0 flex-1 min-h-0">
+          <div className="h-full overflow-y-auto pt-4 pb-2 md:pb-0">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-3 md:gap-4 w-full">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="pl-8">
+                  <RepoCardSkeleton />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     )
   }
@@ -283,6 +310,7 @@ export function RepoList() {
                         }
                         isSelected={selectedRepos.has(repo.id)}
                         onSelect={handleSelectRepo}
+                        gitStatus={gitStatuses?.get(repo.id)}
                       />
                     ))}
                   </div>

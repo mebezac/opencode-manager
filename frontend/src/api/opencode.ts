@@ -23,7 +23,7 @@ export class OpenCodeClient {
     this.directory = directory
     this.client = axios.create({
       baseURL,
-      timeout: 300000
+      timeout: 900000
     })
     
     this.client.interceptors.request.use((config) => {
@@ -78,9 +78,8 @@ export class OpenCodeClient {
     return response.data
   }
 
-  async sendPrompt(sessionID: string, data: SendPromptRequest) {
-    const response = await this.client.post(`/session/${sessionID}/message`, data)
-    return response.data
+  async sendPrompt(sessionID: string, data: SendPromptRequest): Promise<void> {
+    await this.client.post(`/session/${sessionID}/prompt_async`, data)
   }
 
   async summarizeSession(sessionID: string, providerID: string, modelID: string) {

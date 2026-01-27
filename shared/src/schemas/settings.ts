@@ -6,39 +6,11 @@ export const CustomCommandSchema = z.object({
   promptTemplate: z.string(),
 });
 
-export const TTSConfigSchema = z.object({
-  enabled: z.boolean(),
-  provider: z.enum(['external', 'builtin']).default('external'),
-  endpoint: z.string(),
-  apiKey: z.string(),
-  voice: z.string(),
-  model: z.string(),
-  speed: z.number().min(0.25).max(4.0),
-  availableVoices: z.array(z.string()).optional(),
-  availableModels: z.array(z.string()).optional(),
-  lastVoicesFetch: z.number().optional(),
-  lastModelsFetch: z.number().optional(),
-});
-
 export const CustomAgentSchema = z.object({
   name: z.string(),
   description: z.string(),
   config: z.record(z.string(), z.any()),
 });
-
-export type TTSConfig = {
-  enabled: boolean;
-  provider: 'external' | 'builtin';
-  endpoint: string;
-  apiKey: string;
-  voice: string;
-  model: string;
-  speed: number;
-  availableVoices?: string[];
-  availableModels?: string[];
-  lastVoicesFetch?: number;
-  lastModelsFetch?: number;
-};
 
 const isBrowser = typeof navigator !== 'undefined';
 const isMac = isBrowser && navigator.platform.toUpperCase().indexOf('MAC') >= 0;
@@ -113,25 +85,10 @@ export const UserPreferencesSchema = z.object({
   customAgents: z.array(CustomAgentSchema),
   gitCredentials: z.array(GitCredentialSchema).optional(),
   gitIdentity: GitIdentitySchema.optional(),
-  tts: TTSConfigSchema.optional(),
   kubernetesConfig: KubernetesConfigSchema.optional(),
   lastKnownGoodConfig: z.string().optional(),
   repoOrder: z.array(z.number()).optional(),
 });
-
-export const DEFAULT_TTS_CONFIG: TTSConfig = {
-  enabled: false,
-  provider: 'external',
-  endpoint: "https://api.openai.com",
-  apiKey: "",
-  voice: "alloy",
-  model: "tts-1",
-  speed: 1.0,
-  availableVoices: [],
-  availableModels: [],
-  lastVoicesFetch: 0,
-  lastModelsFetch: 0,
-};
 
 export const DEFAULT_USER_PREFERENCES = {
   theme: "dark" as const,
@@ -147,7 +104,6 @@ export const DEFAULT_USER_PREFERENCES = {
   customAgents: [],
   gitCredentials: [] as GitCredential[],
   gitIdentity: DEFAULT_GIT_IDENTITY,
-  tts: DEFAULT_TTS_CONFIG,
   kubernetesConfig: DEFAULT_KUBERNETES_CONFIG,
 };
 

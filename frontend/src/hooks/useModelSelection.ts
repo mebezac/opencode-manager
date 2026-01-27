@@ -17,13 +17,15 @@ export function useModelSelection(
   directory?: string
 ): UseModelSelectionResult {
   const { data: config } = useConfig(opcodeUrl, directory)
-  const { model, recentModels, favoriteModels, setModel, initializeFromConfig, getModelString, toggleFavorite, isFavorite } = useModelStore()
+  const { model, recentModels, favoriteModels, setModel, syncFromConfig, getModelString, toggleFavorite, isFavorite, loadFavoritesFromAPI } = useModelStore()
 
   useEffect(() => {
-    if (config?.model) {
-      initializeFromConfig(config.model)
-    }
-  }, [config?.model, initializeFromConfig])
+    syncFromConfig(config?.model)
+  }, [config?.model, syncFromConfig])
+
+  useEffect(() => {
+    loadFavoritesFromAPI()
+  }, [loadFavoritesFromAPI])
 
   return {
     model,
