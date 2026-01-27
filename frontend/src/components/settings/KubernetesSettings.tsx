@@ -65,8 +65,6 @@ export function KubernetesSettings() {
       const response = await fetch(`/api/kubernetes/pods?namespace=${encodeURIComponent(ns)}`)
       const data = await response.json()
       setPods(data.pods || [])
-    } catch (error) {
-      console.error('Failed to load pods:', error)
     } finally {
       setLoadingPods(false)
     }
@@ -74,19 +72,15 @@ export function KubernetesSettings() {
 
   const deletePod = async (name: string, namespace: string) => {
     try {
-      const response = await fetch(`/api/kubernetes/pods/${encodeURIComponent(name)}`, {
+      const response = await fetch(`/api/kubernetes/pods/${encodeURIComponent(name)}?namespace=${encodeURIComponent(namespace)}`, {
         method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ namespace }),
       })
 
       if (response.ok) {
         await loadPods(namespace)
       }
-    } catch (error) {
-      console.error('Failed to delete pod:', error)
+    } catch {
+      // Silently handle error - user will see pods not refreshing
     }
   }
 

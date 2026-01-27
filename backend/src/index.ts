@@ -294,6 +294,13 @@ try {
   const settingsService = new SettingsService(db)
   settingsService.initializeLastKnownGoodConfig()
 
+  const userSettings = settingsService.getSettings('default')
+  if (userSettings.preferences.kubernetesConfig) {
+    const { kubernetesService } = await import('./services/kubernetes')
+    kubernetesService.updateConfig(userSettings.preferences.kubernetesConfig)
+    logger.info('Kubernetes service initialized with user config')
+  }
+
   ipcServer = await createIPCServer(process.env.STORAGE_PATH || undefined)
   gitAuthService.initialize(ipcServer, db)
   logger.info(`Git IPC server running at ${ipcServer.ipcHandlePath}`)

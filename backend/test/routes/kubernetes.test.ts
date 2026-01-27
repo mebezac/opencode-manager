@@ -13,6 +13,7 @@ const {
   mockCleanupOldPods,
   mockIsEnabled,
   mockGetCurrentNamespace,
+  mockUpdateConfig,
   mockGetSettings,
   mockUpdateSettings,
 } = vi.hoisted(() => ({
@@ -26,6 +27,7 @@ const {
   mockCleanupOldPods: vi.fn(),
   mockIsEnabled: vi.fn().mockReturnValue(true),
   mockGetCurrentNamespace: vi.fn().mockReturnValue('test-namespace'),
+  mockUpdateConfig: vi.fn(),
   mockGetSettings: vi.fn().mockReturnValue({
     preferences: {
       kubernetesConfig: {
@@ -49,6 +51,7 @@ vi.mock('../../src/services/kubernetes', () => ({
     cleanupOldPods: mockCleanupOldPods,
     isEnabled: mockIsEnabled,
     getCurrentNamespace: mockGetCurrentNamespace,
+    updateConfig: mockUpdateConfig,
   },
 }))
 
@@ -245,10 +248,8 @@ describe('Kubernetes Routes', () => {
     it('should delete a pod', async () => {
       mockDeletePod.mockResolvedValue(true)
 
-      const response = await app.request('/pods/test-pod', {
+      const response = await app.request('/pods/test-pod?namespace=test-namespace', {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ namespace: 'test-namespace' }),
       })
 
       expect(response.status).toBe(200)
@@ -259,13 +260,19 @@ describe('Kubernetes Routes', () => {
     it('should return 500 on deletion failure', async () => {
       mockDeletePod.mockResolvedValue(false)
 
-      const response = await app.request('/pods/test-pod', {
+      const response = await app.request('/pods/test-pod?namespace=test-namespace', {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ namespace: 'test-namespace' }),
       })
 
       expect(response.status).toBe(500)
+    })
+
+    it('should return 400 if namespace not provided', async () => {
+      const response = await app.request('/pods/test-pod', {
+        method: 'DELETE',
+      })
+
+      expect(response.status).toBe(400)
     })
   })
 

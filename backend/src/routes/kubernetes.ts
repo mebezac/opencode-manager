@@ -1,5 +1,6 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
+import type { Database } from 'bun:sqlite'
 import { kubernetesService } from '../services/kubernetes'
 import { logger } from '../utils/logger'
 import { SettingsService } from '../services/settings'
@@ -22,16 +23,12 @@ const CreatePodSchema = z.object({
   hostPath: z.string().optional(),
 })
 
-const DeletePodSchema = z.object({
-  namespace: z.string().min(1),
-})
-
 const ExecPodSchema = z.object({
   namespace: z.string().min(1),
   command: z.array(z.string().min(1)),
 })
 
-export function createKubernetesRoutes(db: any) {
+export function createKubernetesRoutes(db: Database) {
   const app = new Hono()
   const settingsService = new SettingsService(db)
 
@@ -66,15 +63,19 @@ export function createKubernetesRoutes(db: any) {
       const validated = UpdateK8sConfigSchema.parse(body)
 
       const currentSettings = settingsService.getSettings(userId)
+      const newConfig = {
+        ...currentSettings.preferences.kubernetesConfig,
+        ...validated,
+      }
+      
       settingsService.updateSettings(
         {
-          kubernetesConfig: {
-            ...currentSettings.preferences.kubernetesConfig,
-            ...validated,
-          },
+          kubernetesConfig: newConfig,
         },
         userId
       )
+
+      kubernetesService.updateConfig(newConfig)
 
       return c.json({ success: true, config: validated })
     } catch (error) {
@@ -189,10 +190,13 @@ export function createKubernetesRoutes(db: any) {
   app.delete('/pods/:name', async (c) => {
     try {
       const name = c.req.param('name')
-      const body = await c.req.json()
-      const validated = DeletePodSchema.parse(body)
+      const namespace = c.req.query('namespace')
 
-      const success = await kubernetesService.deletePod(name, validated.namespace)
+      if (!namespace) {
+        return c.json({ error: 'Namespace query parameter required' }, 400)
+      }
+
+      const success = await kubernetesService.deletePod(name, namespace)
 
       if (!success) {
         return c.json({ error: 'Failed to delete pod' }, 500)
@@ -201,9 +205,6 @@ export function createKubernetesRoutes(db: any) {
       return c.json({ success: true })
     } catch (error) {
       logger.error('Failed to delete pod:', error)
-      if (error instanceof z.ZodError) {
-        return c.json({ error: 'Invalid request data', details: error.issues }, 400)
-      }
       return c.json({ error: 'Failed to delete pod' }, 500)
     }
   })

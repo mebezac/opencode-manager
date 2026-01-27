@@ -50,6 +50,16 @@ export class KubernetesService {
     }
   }
 
+  updateConfig(config: KubernetesConfig): void {
+    this.config = config
+    this.kc = null
+    this.coreV1Api = null
+    
+    if (config.enabled) {
+      this.initialize()
+    }
+  }
+
   private async initialize(): Promise<void> {
     try {
       this.kc = new k8s.KubeConfig()
@@ -292,11 +302,10 @@ export class KubernetesService {
 
     try {
       const pods = await this.listPods(namespace, 'managed-by=opencode-manager')
-      const now = Date.now()
       let deleted = 0
 
       for (const pod of pods) {
-        if (now - pod.age > maxAgeMs && pod.phase === 'Succeeded') {
+        if (pod.age > maxAgeMs && pod.phase === 'Succeeded') {
           const success = await this.deletePod(pod.name, pod.namespace)
           if (success) deleted++
         }
