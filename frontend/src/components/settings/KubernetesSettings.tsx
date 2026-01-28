@@ -188,11 +188,11 @@ export function KubernetesSettings() {
                   id="kubeconfig"
                   value={k8sConfig.kubeconfigPath || ''}
                   onChange={(e) => updateSettings({ kubernetesConfig: { ...k8sConfig, kubeconfigPath: e.target.value } })}
-                  placeholder="/path/to/kubeconfig"
+                  placeholder="/workspace/.kube/kubeconfig"
                   className="max-w-sm"
                 />
                 <p className="text-sm text-muted-foreground">
-                  Path to kubeconfig file. Leave empty for default location
+                  Path to kubeconfig file. Leave empty for default location (/workspace/.kube/kubeconfig)
                 </p>
               </div>
 

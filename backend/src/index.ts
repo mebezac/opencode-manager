@@ -188,7 +188,7 @@ gh repo view
 The Kubernetes integration must be enabled in Settings > Kubernetes:
 1. Enable the integration toggle
 2. Configure the namespace (default: \`opencode-testing\`)
-3. Optionally set a custom kubeconfig path
+3. Optionally set a custom kubeconfig path (default: \`/workspace/.kube/kubeconfig\`)
 4. Test the connection to verify cluster access
 
 ### Available Operations

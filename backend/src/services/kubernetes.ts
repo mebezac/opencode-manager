@@ -94,17 +94,13 @@ export class KubernetesService {
     try {
       this.kc = new k8s.KubeConfig()
 
-      if (this.config.kubeconfigPath) {
-        const exists = await fs.access(this.config.kubeconfigPath).then(() => true).catch(() => false)
-        if (!exists) {
-          throw new Error(`Kubeconfig file not found: ${this.config.kubeconfigPath}`)
-        }
-        this.kc.loadFromFile(this.config.kubeconfigPath)
-        logger.info(`Loaded kubeconfig from: ${this.config.kubeconfigPath}`)
-      } else {
-        this.kc.loadFromDefault()
-        logger.info('Loaded kubeconfig from default location')
+      const kubeconfigPath = this.config.kubeconfigPath || '/workspace/.kube/kubeconfig'
+      const exists = await fs.access(kubeconfigPath).then(() => true).catch(() => false)
+      if (!exists) {
+        throw new Error(`Kubeconfig file not found: ${kubeconfigPath}`)
       }
+      this.kc.loadFromFile(kubeconfigPath)
+      logger.info(`Loaded kubeconfig from: ${kubeconfigPath}`)
 
       this.coreV1Api = this.kc.makeApiClient(k8s.CoreV1Api)
       this.config.enabled = true

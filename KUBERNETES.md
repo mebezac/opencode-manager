@@ -22,7 +22,7 @@ You need access to a Kubernetes cluster with appropriate permissions. The integr
 ### Kubeconfig
 
 OpenCode Manager can use:
-- Your default kubeconfig location (`~/.kube/config`)
+- Default kubeconfig location (`/workspace/.kube/kubeconfig`)
 - A custom kubeconfig file path
 - In-cluster authentication (when running inside Kubernetes)
 
@@ -113,7 +113,7 @@ Save this file and provide its path to OpenCode Manager in the Kubernetes settin
 1. Go to **Settings → Kubernetes**
 2. Toggle "Enable Kubernetes" to ON
 3. Set your namespace (default: `opencode-testing`)
-4. Optionally specify a kubeconfig path
+4. Optionally specify a kubeconfig path (default: `/workspace/.kube/kubeconfig`)
 5. Click **Test Connection** to verify
 
 ### Creating Pods
@@ -219,7 +219,7 @@ When running OpenCode Manager in Docker, ensure the container can access your Ku
 services:
   opencode-manager:
     volumes:
-      - ~/.kube/config:/app/.kube/config:ro
+      - /workspace/.kube/kubeconfig:/workspace/.kube/kubeconfig:ro
       - workspace-volume:/workspace
 ```
 
