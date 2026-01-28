@@ -20,7 +20,7 @@ describe('KubernetesService (Mocked)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     service = new MockKubernetesService({
-      enabled: true,
+      enabled: false,
       namespace: 'test-namespace',
     })
   })
