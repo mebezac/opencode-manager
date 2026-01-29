@@ -17,6 +17,7 @@ import { createOAuthRoutes } from './routes/oauth'
 import { createTitleRoutes } from './routes/title'
 import { createSSERoutes } from './routes/sse'
 import { createPushRoutes } from './routes/push'
+import { createKubernetesRoutes } from './routes/kubernetes'
 import { createFavoritesRoutes } from './routes/favorites'
 import { sseAggregator } from './services/sse-aggregator'
 import { ensureDirectoryExists, writeFileContent, fileExists, readFileContent } from './services/file-operations'
@@ -173,6 +174,147 @@ gh repo view
 - Works seamlessly with private repositories
 - No manual token management needed
 
+## Kubernetes Integration
+
+**Kubernetes** pod management is available for creating isolated testing environments:
+
+### When to Use
+- Testing code in isolated, clean environments
+- Running integration tests that need specific dependencies
+- Executing commands in containerized environments
+- Testing deployment configurations
+
+### Prerequisites
+The Kubernetes integration must be enabled in Settings > Kubernetes:
+1. Enable the integration toggle
+2. Configure the namespace (default: \`opencode-testing\`)
+3. Optionally set a custom kubeconfig path (default: \`/workspace/.kube/kubeconfig\`)
+4. Test the connection to verify cluster access
+
+### Available Operations
+
+**Create a pod:**
+\`\`\`bash
+curl -X POST http://localhost:5001/api/kubernetes/pods \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "name": "test-environment",
+    "namespace": "opencode-testing",
+    "image": "node:20-alpine",
+    "command": ["/bin/sh"],
+    "args": ["-c", "sleep 3600"]
+  }'
+\`\`\`
+
+**List pods:**
+\`\`\`bash
+curl http://localhost:5001/api/kubernetes/pods?namespace=opencode-testing
+\`\`\`
+
+**Execute command in pod:**
+\`\`\`bash
+curl -X POST http://localhost:5001/api/kubernetes/pods/test-environment/exec \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "namespace": "opencode-testing",
+    "command": ["npm", "test"]
+  }'
+\`\`\`
+
+**Get pod logs:**
+\`\`\`bash
+curl http://localhost:5001/api/kubernetes/pods/test-environment/logs?namespace=opencode-testing&tailLines=100
+\`\`\`
+
+**Delete pod:**
+\`\`\`bash
+curl -X DELETE http://localhost:5001/api/kubernetes/pods/test-environment?namespace=opencode-testing
+\`\`\`
+
+**Cleanup old completed pods:**
+\`\`\`bash
+curl -X POST http://localhost:5001/api/kubernetes/cleanup \\
+  -H "Content-Type: application/json" \\
+  -d '{"namespace": "opencode-testing"}'
+\`\`\`
+
+**Create a service:**
+\`\`\`bash
+curl -X POST http://localhost:5001/api/kubernetes/services \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "name": "postgres-service",
+    "namespace": "opencode-testing",
+    "selector": {"app": "postgres"},
+    "ports": [{"port": 5432, "targetPort": 5432}],
+    "type": "ClusterIP"
+  }'
+\`\`\`
+
+**List services:**
+\`\`\`bash
+curl http://localhost:5001/api/kubernetes/services?namespace=opencode-testing
+\`\`\`
+
+**Delete service:**
+\`\`\`bash
+curl -X DELETE http://localhost:5001/api/kubernetes/services/postgres-service?namespace=opencode-testing
+\`\`\`
+
+### Example: Postgres + App Pod Setup
+
+Here's how to set up a postgres database pod with a service and connect an app pod to it:
+
+\`\`\`bash
+# 1. Create postgres pod with app=postgres label
+curl -X POST http://localhost:5001/api/kubernetes/pods \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "name": "postgres-db",
+    "namespace": "opencode-testing",
+    "image": "postgres:15-alpine",
+    "labels": {"app": "postgres"},
+    "env": {
+      "POSTGRES_PASSWORD": "test123",
+      "POSTGRES_DB": "myapp"
+    }
+  }'
+
+# 2. Create service to expose postgres
+curl -X POST http://localhost:5001/api/kubernetes/services \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "name": "postgres-service",
+    "namespace": "opencode-testing",
+    "selector": {"app": "postgres"},
+    "ports": [{"port": 5432, "targetPort": 5432}]
+  }'
+
+# 3. Create app pod that connects to postgres via service DNS
+curl -X POST http://localhost:5001/api/kubernetes/pods \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "name": "my-app",
+    "namespace": "opencode-testing",
+    "image": "node:20-alpine",
+    "env": {
+      "DATABASE_URL": "postgresql://postgres:test123@postgres-service:5432/myapp"
+    },
+    "command": ["npm", "test"]
+  }'
+\`\`\`
+
+The app pod can now connect to postgres using the DNS name \`postgres-service\` which resolves within the cluster.
+
+### Important Notes
+- All pods created are labeled with \`managed-by=opencode-manager\`
+- Pods use \`restartPolicy: Never\` by default
+- The container name is always \`runner\`
+- Services created are labeled with \`managed-by=opencode-manager\`
+- Pod labels can be customized via the \`labels\` field to enable service selectors
+- Only namespace-scoped operations are allowed (no cluster-wide access)
+- Requires proper RBAC permissions in the Kubernetes cluster
+
 ## General Guidelines
 
 - This file is merged with any AGENTS.md files in individual repositories
@@ -293,6 +435,13 @@ try {
   const settingsService = new SettingsService(db)
   settingsService.initializeLastKnownGoodConfig()
 
+  const userSettings = settingsService.getSettings('default')
+  if (userSettings.preferences.kubernetesConfig) {
+    const { kubernetesService } = await import('./services/kubernetes')
+    kubernetesService.updateConfig(userSettings.preferences.kubernetesConfig)
+    logger.info('Kubernetes service initialized with user config')
+  }
+
   ipcServer = await createIPCServer(process.env.STORAGE_PATH || undefined)
   gitAuthService.initialize(ipcServer, db)
   logger.info(`Git IPC server running at ${ipcServer.ipcHandlePath}`)
@@ -314,6 +463,7 @@ app.route('/api/oauth', createOAuthRoutes())
 app.route('/api/generate-title', createTitleRoutes())
 app.route('/api/sse', createSSERoutes())
 app.route('/api/push', createPushRoutes(db))
+app.route('/api/kubernetes', createKubernetesRoutes(db))
 app.route('/api/favorites', createFavoritesRoutes(db))
 
 app.all('/api/opencode/*', async (c) => {
