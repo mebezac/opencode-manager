@@ -81,9 +81,15 @@ RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
 
 FROM base AS builder
 
-COPY --from=deps /app ./
-COPY shared ./shared
-COPY backend ./backend
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY shared/package.json ./shared/
+COPY backend/package.json ./backend/
+COPY frontend/package.json ./frontend/
+
+RUN --mount=type=cache,id=pnpm-builder,target=/root/.local/share/pnpm/store \
+    pnpm install --frozen-lockfile
+
+COPY shared/src ./shared/src
 COPY frontend/src ./frontend/src
 COPY frontend/public ./frontend/public
 COPY frontend/index.html frontend/vite.config.ts frontend/tsconfig*.json frontend/components.json frontend/eslint.config.js ./frontend/
@@ -122,12 +128,11 @@ ENV PATH="/workspace/mise/shims:$PATH"
 
 COPY --from=deps --chown=node:node /app/node_modules ./node_modules
 COPY --from=builder /app/shared ./shared
-COPY --from=builder /app/backend ./backend
+COPY --chown=node:node backend ./backend
+COPY --from=deps --chown=node:node /app/backend/node_modules ./backend/node_modules
+COPY --from=deps --chown=node:node /app/shared/node_modules ./shared/node_modules
 COPY --from=builder /app/frontend/dist ./frontend/dist
 COPY package.json pnpm-workspace.yaml ./
-
-RUN mkdir -p /app/backend/node_modules/@opencode-manager && \
-    ln -s /app/shared /app/backend/node_modules/@opencode-manager/shared
 
 COPY scripts/docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh

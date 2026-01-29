@@ -18,3 +18,5 @@ workspace/
 /config/
 temp/
 
+kubeconfig
+ca.crt
