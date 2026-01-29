@@ -34,7 +34,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
   && apt-get update && apt-get install -y gh \
   && rm -rf /var/lib/apt/lists/*
 
-RUN corepack enable && corepack prepare pnpm@10.28.1 --activate
+RUN corepack enable && corepack prepare pnpm@10.28.2 --activate
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 ENV MISE_INSTALL_PATH="/usr/local/bin/mise"
@@ -99,7 +99,7 @@ RUN pnpm --filter frontend build
 FROM base AS runner
 
 ARG UV_VERSION=0.9.27
-ARG OPENCODE_VERSION=1.1.36
+ARG OPENCODE_VERSION=1.1.42
 
 RUN echo "Installing uv=${UV_VERSION} opencode=${OPENCODE_VERSION}" && \
     curl -LsSf https://astral.sh/uv/${UV_VERSION}/install.sh | UV_NO_MODIFY_PATH=1 sh && \

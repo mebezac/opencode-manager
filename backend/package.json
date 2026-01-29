@@ -3,7 +3,7 @@
   "module": "index.ts",
   "type": "module",
   "private": true,
-  "packageManager": "pnpm@10.28.1",
+  "packageManager": "pnpm@10.28.2",
   "scripts": {
     "dev": "bun --watch src/index.ts",
     "start": "bun src/index.ts",
@@ -23,7 +23,7 @@
     "archiver": "^7.0.1",
     "dotenv": "^17.2.3",
     "eventsource": "^4.1.0",
-    "hono": "^4.11.5",
+    "hono": "^4.11.6",
     "js-yaml": "^4.1.1",
     "strip-json-comments": "^5.0.3",
     "zod": "^4.3.6"
@@ -35,7 +35,7 @@
     "@types/bun": "latest",
     "@vitest/ui": "^4.0.18",
     "eslint": "^9.39.2",
-    "typescript-eslint": "^8.53.1",
+    "typescript-eslint": "^8.54.0",
     "vitest": "^4.0.18"
   },
   "peerDependencies": {
