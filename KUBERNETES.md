@@ -7,6 +7,7 @@ OpenCode Manager supports Kubernetes integration for creating isolated testing e
 The Kubernetes integration allows you to:
 - Create and manage ephemeral pods for testing code in isolated environments
 - Create Kubernetes Services for inter-pod networking
+- Create Kubernetes Ingresses for external access
 - Execute commands inside running pods
 - View pod status and logs
 - Clean up old pods automatically
@@ -46,8 +47,11 @@ metadata:
   namespace: opencode-testing
 rules:
 - apiGroups: [""]
-  resources: ["pods", "pods/log", "pods/exec", "services"]
+  resources: ["pods", "pods/log", "pods/exec", "services", "ingresses"]
   verbs: ["get", "list", "create", "delete", "exec"]
+- apiGroups: ["networking.k8s.io"]
+  resources: ["ingresses"]
+  verbs: ["get", "list", "create", "delete"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -228,6 +232,50 @@ Service types:
 - **NodePort**: Exposes service on each node's IP at a static port
 - **LoadBalancer**: Creates an external load balancer (cloud provider dependent)
 
+### Creating Ingresses
+
+Ingresses expose pods and services externally via HTTP/HTTPS routes:
+
+```bash
+POST /api/kubernetes/ingresses
+{
+  "name": "my-app-ingress",
+  "namespace": "opencode-testing",
+  "rules": [
+    {
+      "host": "myapp.example.com",
+      "http": {
+        "paths": [
+          {
+            "path": "/",
+            "pathType": "Prefix",
+            "backend": {
+              "service": {
+                "name": "my-service",
+                "port": {
+                  "number": 8080
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "annotations": {
+    "nginx.ingress.kubernetes.io/rewrite-target": "/"
+  }
+}
+```
+
+Use ingresses when you need to:
+- Expose pods externally via HTTP/HTTPS
+- Route traffic to services based on hostnames or paths
+- Terminate SSL/TLS at the ingress controller
+- Enable WebSocket connections to pods (with proper annotations)
+
+**Note:** Requires an ingress controller (e.g., nginx-ingress) installed in your cluster.
+
 ### Managing Pods
 
 Once connected, you can:
@@ -277,6 +325,10 @@ OpenCode Manager provides an interactive web-based terminal for pods:
 | `/api/kubernetes/services` | POST | Create new service |
 | `/api/kubernetes/services/:name` | GET | Get service details |
 | `/api/kubernetes/services/:name` | DELETE | Delete service |
+| `/api/kubernetes/ingresses` | GET | List ingresses in namespace |
+| `/api/kubernetes/ingresses` | POST | Create new ingress |
+| `/api/kubernetes/ingresses/:name` | GET | Get ingress details |
+| `/api/kubernetes/ingresses/:name` | DELETE | Delete ingress |
 
 ## Docker Compose Configuration
 
@@ -487,6 +539,73 @@ POST /api/kubernetes/pods
 ```
 
 The app pod can now connect to postgres using the DNS name `postgres-service`, which Kubernetes automatically resolves to the postgres pod's IP address.
+
+### Ingress with WebSocket Support
+
+Create an ingress for the pod terminal WebSocket with nginx annotations:
+
+```bash
+# 1. Create a service for the pod terminal
+POST /api/kubernetes/services
+{
+  "name": "pod-terminal-service",
+  "namespace": "opencode-testing",
+  "selector": {
+    "app": "test-runner"
+  },
+  "ports": [
+    {
+      "port": 5004,
+      "targetPort": 5004,
+      "protocol": "TCP"
+    }
+  ],
+  "type": "ClusterIP"
+}
+
+# 2. Create an ingress with WebSocket support
+POST /api/kubernetes/ingresses
+{
+  "name": "pod-terminal-ingress",
+  "namespace": "opencode-testing",
+  "rules": [
+    {
+      "host": "terminal.example.com",
+      "http": {
+        "paths": [
+          {
+            "path": "/",
+            "pathType": "Prefix",
+            "backend": {
+              "service": {
+                "name": "pod-terminal-service",
+                "port": {
+                  "number": 5004
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "annotations": {
+    "nginx.ingress.kubernetes.io/rewrite-target": "/",
+    "nginx.ingress.kubernetes.io/proxy-read-timeout": "3600",
+    "nginx.ingress.kubernetes.io/proxy-send-timeout": "3600",
+    "nginx.ingress.kubernetes.io/proxy-http-version": "1.1",
+    "nginx.ingress.kubernetes.io/proxy-buffering": "off",
+    "nginx.ingress.kubernetes.io/connection-proxy-header": "keep-alive",
+    "nginx.ingress.kubernetes.io/upgrade-proxy-header": "websocket"
+  }
+}
+```
+
+**WebSocket Annotations Explained:**
+- `proxy-read-timeout` / `proxy-send-timeout`: Increase timeout for long-running WebSocket connections
+- `proxy-http-version`: Use HTTP/1.1 for WebSocket upgrade support
+- `proxy-buffering`: Disable buffering for real-time bidirectional communication
+- `connection-proxy-header` / `upgrade-proxy-header`: Enable WebSocket protocol upgrade
 
 ## Additional Resources
 

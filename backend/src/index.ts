@@ -262,6 +262,76 @@ curl http://localhost:5003/api/kubernetes/services?namespace=opencode-testing
 curl -X DELETE http://localhost:5003/api/kubernetes/services/postgres-service?namespace=opencode-testing
 \`\`\`
 
+**Create an ingress:**
+\`\`\`bash
+curl -X POST http://localhost:5003/api/kubernetes/ingresses \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "name": "my-app-ingress",
+    "namespace": "opencode-testing",
+    "rules": [{
+      "host": "myapp.example.com",
+      "http": {
+        "paths": [{
+          "path": "/",
+          "pathType": "Prefix",
+          "backend": {
+            "service": {
+              "name": "my-service",
+              "port": {"number": 8080}
+            }
+          }
+        }]
+      }
+    }],
+    "annotations": {
+      "nginx.ingress.kubernetes.io/rewrite-target": "/"
+    }
+  }'
+\`\`\`
+
+**List ingresses:**
+\`\`\`bash
+curl http://localhost:5003/api/kubernetes/ingresses?namespace=opencode-testing
+\`\`\`
+
+**Delete an ingress:**
+\`\`\`bash
+curl -X DELETE http://localhost:5003/api/kubernetes/ingresses/my-app-ingress?namespace=opencode-testing
+\`\`\`
+
+**Example ingress with nginx WebSocket annotations:**
+\`\`\`bash
+curl -X POST http://localhost:5003/api/kubernetes/ingresses \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "name": "pod-terminal-ingress",
+    "namespace": "opencode-testing",
+    "rules": [{
+      "host": "terminal.example.com",
+      "http": {
+        "paths": [{
+          "path": "/",
+          "pathType": "Prefix",
+          "backend": {
+            "service": {
+              "name": "pod-terminal-service",
+              "port": {"number": 5004}
+            }
+          }
+        }]
+      }
+    }],
+    "annotations": {
+      "nginx.ingress.kubernetes.io/rewrite-target": "/",
+      "nginx.ingress.kubernetes.io/proxy-read-timeout": "3600",
+      "nginx.ingress.kubernetes.io/proxy-send-timeout": "3600",
+      "nginx.ingress.kubernetes.io/proxy-http-version": "1.1",
+      "nginx.ingress.kubernetes.io/proxy-buffering": "off"
+    }
+  }'
+\`\`\`
+
 ### Example: Postgres + App Pod Setup
 
 Here's how to set up a postgres database pod with a service and connect an app pod to it:
@@ -312,9 +382,11 @@ The app pod can now connect to postgres using the DNS name \`postgres-service\` 
 - Pods use \`restartPolicy: Never\` by default
 - The container name is always \`runner\`
 - Services created are labeled with \`managed-by=opencode-manager\`
+- Ingresses created are labeled with \`managed-by=opencode-manager\`
 - Pod labels can be customized via the \`labels\` field to enable service selectors
 - Only namespace-scoped operations are allowed (no cluster-wide access)
 - Requires proper RBAC permissions in the Kubernetes cluster
+- Ingress operations require RBAC permissions for \`ingresses\` resource in \`networking.k8s.io\` apiGroup
 
 ## General Guidelines
 
