@@ -8,20 +8,13 @@ interface CommitsTabProps {
   onSelectCommit?: (hash: string) => void
 }
 
-function formatRelativeTime(dateString: string): string {
-  if (!dateString) {
+function formatRelativeTime(timestamp: string): string {
+  if (!timestamp) {
     return ''
   }
   
-  let date: Date
-  
-  const isoFormatted = dateString.replace(' ', 'T')
-  date = new Date(isoFormatted)
-  
-  if (isNaN(date.getTime())) {
-    date = new Date(dateString)
-  }
-  
+  const date = new Date(parseInt(timestamp, 10) * 1000)
+
   if (isNaN(date.getTime())) {
     return ''
   }
