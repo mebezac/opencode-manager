@@ -34,7 +34,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
   && apt-get update && apt-get install -y gh \
   && rm -rf /var/lib/apt/lists/*
 
-RUN corepack enable && corepack prepare pnpm@10.28.1 --activate
+RUN corepack enable && corepack prepare pnpm@10.28.2 --activate
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 ENV MISE_INSTALL_PATH="/usr/local/bin/mise"
