@@ -196,7 +196,7 @@ The Kubernetes integration must be enabled in Settings > Kubernetes:
 
 **Create a pod:**
 \`\`\`bash
-curl -X POST http://localhost:5001/api/kubernetes/pods \\
+curl -X POST http://localhost:5003/api/kubernetes/pods \\
   -H "Content-Type: application/json" \\
   -d '{
     "name": "test-environment",
@@ -209,12 +209,12 @@ curl -X POST http://localhost:5001/api/kubernetes/pods \\
 
 **List pods:**
 \`\`\`bash
-curl http://localhost:5001/api/kubernetes/pods?namespace=opencode-testing
+curl http://localhost:5003/api/kubernetes/pods?namespace=opencode-testing
 \`\`\`
 
 **Execute command in pod:**
 \`\`\`bash
-curl -X POST http://localhost:5001/api/kubernetes/pods/test-environment/exec \\
+curl -X POST http://localhost:5003/api/kubernetes/pods/test-environment/exec \\
   -H "Content-Type: application/json" \\
   -d '{
     "namespace": "opencode-testing",
@@ -224,24 +224,24 @@ curl -X POST http://localhost:5001/api/kubernetes/pods/test-environment/exec \\
 
 **Get pod logs:**
 \`\`\`bash
-curl http://localhost:5001/api/kubernetes/pods/test-environment/logs?namespace=opencode-testing&tailLines=100
+curl http://localhost:5003/api/kubernetes/pods/test-environment/logs?namespace=opencode-testing&tailLines=100
 \`\`\`
 
 **Delete pod:**
 \`\`\`bash
-curl -X DELETE http://localhost:5001/api/kubernetes/pods/test-environment?namespace=opencode-testing
+curl -X DELETE http://localhost:5003/api/kubernetes/pods/test-environment?namespace=opencode-testing
 \`\`\`
 
 **Cleanup old completed pods:**
 \`\`\`bash
-curl -X POST http://localhost:5001/api/kubernetes/cleanup \\
+curl -X POST http://localhost:5003/api/kubernetes/cleanup \\
   -H "Content-Type: application/json" \\
   -d '{"namespace": "opencode-testing"}'
 \`\`\`
 
 **Create a service:**
 \`\`\`bash
-curl -X POST http://localhost:5001/api/kubernetes/services \\
+curl -X POST http://localhost:5003/api/kubernetes/services \\
   -H "Content-Type: application/json" \\
   -d '{
     "name": "postgres-service",
@@ -254,12 +254,12 @@ curl -X POST http://localhost:5001/api/kubernetes/services \\
 
 **List services:**
 \`\`\`bash
-curl http://localhost:5001/api/kubernetes/services?namespace=opencode-testing
+curl http://localhost:5003/api/kubernetes/services?namespace=opencode-testing
 \`\`\`
 
 **Delete service:**
 \`\`\`bash
-curl -X DELETE http://localhost:5001/api/kubernetes/services/postgres-service?namespace=opencode-testing
+curl -X DELETE http://localhost:5003/api/kubernetes/services/postgres-service?namespace=opencode-testing
 \`\`\`
 
 ### Example: Postgres + App Pod Setup
@@ -268,7 +268,7 @@ Here's how to set up a postgres database pod with a service and connect an app p
 
 \`\`\`bash
 # 1. Create postgres pod with app=postgres label
-curl -X POST http://localhost:5001/api/kubernetes/pods \\
+curl -X POST http://localhost:5003/api/kubernetes/pods \\
   -H "Content-Type: application/json" \\
   -d '{
     "name": "postgres-db",
@@ -282,7 +282,7 @@ curl -X POST http://localhost:5001/api/kubernetes/pods \\
   }'
 
 # 2. Create service to expose postgres
-curl -X POST http://localhost:5001/api/kubernetes/services \\
+curl -X POST http://localhost:5003/api/kubernetes/services \\
   -H "Content-Type: application/json" \\
   -d '{
     "name": "postgres-service",
@@ -292,7 +292,7 @@ curl -X POST http://localhost:5001/api/kubernetes/services \\
   }'
 
 # 3. Create app pod that connects to postgres via service DNS
-curl -X POST http://localhost:5001/api/kubernetes/pods \\
+curl -X POST http://localhost:5003/api/kubernetes/pods \\
   -H "Content-Type: application/json" \\
   -d '{
     "name": "my-app",
