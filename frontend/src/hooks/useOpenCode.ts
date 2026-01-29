@@ -342,7 +342,6 @@ export const useSendPrompt = (opcodeUrl: string | null | undefined, directory?: 
         return;
       }
       
-      setSessionStatus(sessionID, { type: "idle" });
       queryClient.setQueryData<MessageListResponse>(
         messagesQueryKey,
         (old) => old?.filter((msg) => !msg.info.id.startsWith("optimistic_")),
@@ -375,8 +374,6 @@ export const useSendPrompt = (opcodeUrl: string | null | undefined, directory?: 
           return [...withoutOptimistic, { info: response.info, parts: response.parts }];
         },
       );
-
-      setSessionStatus(sessionID, { type: "idle" });
 
       queryClient.invalidateQueries({
         queryKey: ["opencode", "session", opcodeUrl, sessionID, directory],
