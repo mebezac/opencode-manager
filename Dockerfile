@@ -128,7 +128,7 @@ ENV PATH="/workspace/mise/shims:$PATH"
 
 COPY --from=deps --chown=node:node /app/node_modules ./node_modules
 COPY --from=builder /app/shared ./shared
-COPY --from=builder /app/backend ./backend
+COPY --chown=node:node backend ./backend
 COPY --from=builder /app/frontend/dist ./frontend/dist
 COPY package.json pnpm-workspace.yaml ./
 
