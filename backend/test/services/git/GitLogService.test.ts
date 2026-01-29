@@ -61,8 +61,8 @@ describe('GitLogService', () => {
       getRepoByIdMock.mockReturnValue(mockRepo as any)
       executeCommandMock
         .mockResolvedValueOnce(
-          'abc123|John Doe|john@example.com|2024-01-01 12:00:00 +0000|First commit\n' +
-          'def456|Jane Smith|jane@example.com|2024-01-02 13:00:00 +0000|Second commit'
+          'abc123|John Doe|john@example.com|1704110400|First commit\n' +
+          'def456|Jane Smith|jane@example.com|1704196800|Second commit'
         )
         .mockResolvedValueOnce('')
 
@@ -70,15 +70,15 @@ describe('GitLogService', () => {
 
       expect(getRepoByIdMock).toHaveBeenCalledWith(database, 1)
       expect(executeCommandMock).toHaveBeenCalledWith(
-        ['git', '-C', '/repos/test-repo', 'log', '--all', '-n', '10', '--format=%H|%an|%ae|%ai|%s'],
-        { env: expect.any(Object) }
+        ['git', '-C', '/repos/test-repo', 'log', '--all', '-n', '10', '--format=%H|%an|%ae|%at|%s'],
+        { env: expect.anything() }
       )
       expect(result).toHaveLength(2)
       expect(result[0]).toEqual({
         hash: 'abc123',
         authorName: 'John Doe',
         authorEmail: 'john@example.com',
-        date: '2024-01-01 12:00:00 +0000',
+        date: '1704110400',
         message: 'First commit',
         unpushed: false,
       })
@@ -86,7 +86,7 @@ describe('GitLogService', () => {
         hash: 'def456',
         authorName: 'Jane Smith',
         authorEmail: 'jane@example.com',
-        date: '2024-01-02 13:00:00 +0000',
+        date: '1704196800',
         message: 'Second commit',
         unpushed: false,
       })
@@ -99,14 +99,14 @@ describe('GitLogService', () => {
       }
       getRepoByIdMock.mockReturnValue(mockRepo as any)
       executeCommandMock
-        .mockResolvedValueOnce('abc123|John Doe|john@example.com|2024-01-01 12:00:00 +0000|First commit')
+        .mockResolvedValueOnce('abc123|John Doe|john@example.com|1704110400|First commit')
         .mockResolvedValueOnce('')
 
       await service.getLog(1, database, 5)
 
       expect(executeCommandMock).toHaveBeenCalledWith(
-        ['git', '-C', '/repos/test-repo', 'log', '--all', '-n', '5', '--format=%H|%an|%ae|%ai|%s'],
-        { env: expect.any(Object) }
+        ['git', '-C', '/repos/test-repo', 'log', '--all', '-n', '5', '--format=%H|%an|%ae|%at|%s'],
+        { env: expect.anything() }
       )
     })
 
@@ -133,7 +133,7 @@ describe('GitLogService', () => {
       }
       getRepoByIdMock.mockReturnValue(mockRepo as any)
       executeCommandMock
-        .mockResolvedValueOnce('abc123|John Doe|john@example.com|2024-01-01 12:00:00 +0000|Multi|line commit')
+        .mockResolvedValueOnce('abc123|John Doe|john@example.com|1704110400|Multi|line commit')
         .mockResolvedValueOnce('')
 
       const result = await service.getLog(1, database, 10)
@@ -180,7 +180,7 @@ describe('GitLogService', () => {
       }
       getRepoByIdMock.mockReturnValue(mockRepo as any)
       executeCommandMock
-        .mockResolvedValueOnce('|John Doe|john@example.com|2024-01-01 12:00:00 +0000|No hash')
+        .mockResolvedValueOnce('|John Doe|john@example.com|1704110400|No hash')
         .mockResolvedValueOnce('')
 
       const result = await service.getLog(1, database, 10)
@@ -213,20 +213,20 @@ describe('GitLogService', () => {
         localPath: 'test-repo',
       }
       getRepoByIdMock.mockReturnValue(mockRepo as any)
-      executeCommandMock.mockResolvedValue('abc123|John Doe|john@example.com|2024-01-01 12:00:00 +0000|Test commit')
+      executeCommandMock.mockResolvedValue('abc123|John Doe|john@example.com|1704110400|Test commit')
 
       const result = await service.getCommit(1, 'abc123', database)
 
       expect(getRepoByIdMock).toHaveBeenCalledWith(database, 1)
       expect(executeCommandMock).toHaveBeenCalledWith(
-        ['git', '-C', '/repos/test-repo', 'log', '--format=%H|%an|%ae|%ai|%s', 'abc123', '-1'],
-        { env: expect.any(Object) }
+        ['git', '-C', '/repos/test-repo', 'log', '--format=%H|%an|%ae|%at|%s', 'abc123', '-1'],
+        { env: expect.anything() }
       )
       expect(result).toEqual({
         hash: 'abc123',
         authorName: 'John Doe',
         authorEmail: 'john@example.com',
-        date: '2024-01-01 12:00:00 +0000',
+        date: '1704110400',
         message: 'Test commit',
       })
     })
