@@ -406,12 +406,34 @@ export function createKubernetesRoutes(db: Database) {
       return c.json({ error: 'pod and namespace query parameters required' }, 400)
     }
 
-    const port = parseInt(ENV.SERVER.PORT) + 1
     const protocol = c.req.header('x-forwarded-proto') || 'http'
-    const host = c.req.header('host')?.split(':')[0] || 'localhost'
+    const hostHeader = c.req.header('host') || 'localhost'
+    const forwardedPort = c.req.header('x-forwarded-port')
+    
+    // Determine port - use forwarded port if available, otherwise default based on protocol
+    let port: number | null = null
+    if (forwardedPort) {
+      port = parseInt(forwardedPort)
+    } else if (!hostHeader.includes(':')) {
+      // No port in host header - use default for protocol (omit from URL)
+      port = null
+    } else {
+      // Has explicit port in host, check if we should include it
+      const explicitPort = parseInt(hostHeader.split(':')[1])
+      // Only include port if it's non-standard
+      if ((protocol === 'https' && explicitPort !== 443) || (protocol === 'http' && explicitPort !== 80)) {
+        port = explicitPort
+      } else {
+        port = null
+      }
+    }
+
+    const host = hostHeader.split(':')[0]
+    const wsProtocol = protocol === 'https' ? 'wss' : 'ws'
+    const portSuffix = port ? `:${port}` : ''
 
     return c.json({
-      wsUrl: `${protocol === 'https' ? 'wss' : 'ws'}://${host}:${port}/ws/kubernetes/exec?pod=${encodeURIComponent(podName)}&namespace=${encodeURIComponent(namespace)}`,
+      wsUrl: `${wsProtocol}://${host}${portSuffix}/ws/kubernetes/exec?pod=${encodeURIComponent(podName)}&namespace=${encodeURIComponent(namespace)}`,
     })
   })
 
