@@ -275,8 +275,12 @@ export const useSendPrompt = (opcodeUrl: string | null | undefined, directory?: 
         contentParts,
         optimisticUserID,
       );
+
+      const messagesQueryKey = ["opencode", "messages", opcodeUrl, sessionID, directory];
+      await queryClient.cancelQueries({ queryKey: messagesQueryKey });
+
       queryClient.setQueryData<MessageListResponse>(
-        ["opencode", "messages", opcodeUrl, sessionID, directory],
+        messagesQueryKey,
         (old) => [...(old || []), userMessage],
       );
 
@@ -321,14 +325,25 @@ export const useSendPrompt = (opcodeUrl: string | null | undefined, directory?: 
         requestData.variant = variant;
       }
 
-      await client.sendPrompt(sessionID, requestData);
+      const response = await client.sendPrompt(sessionID, requestData);
 
-      return { optimisticUserID, userPromptText };
+      return { optimisticUserID, userPromptText, response };
     },
     onError: (error, variables) => {
       const { sessionID } = variables;
+      const messagesQueryKey = ["opencode", "messages", opcodeUrl, sessionID, directory];
+      
+      const axiosError = error as { code?: string; response?: unknown };
+      const isNetworkError = axiosError.code === 'ECONNABORTED' || 
+                            axiosError.code === 'ERR_NETWORK' ||
+                            !axiosError.response;
+      
+      if (isNetworkError) {
+        return;
+      }
+      
       queryClient.setQueryData<MessageListResponse>(
-        ["opencode", "messages", opcodeUrl, sessionID, directory],
+        messagesQueryKey,
         (old) => old?.filter((msg) => !msg.info.id.startsWith("optimistic_")),
       );
       
@@ -340,11 +355,24 @@ export const useSendPrompt = (opcodeUrl: string | null | undefined, directory?: 
     },
     onSuccess: async (data, variables) => {
       const { sessionID } = variables;
-      const { optimisticUserID, userPromptText } = data;
+      const { optimisticUserID, userPromptText, response } = data;
+      const messagesQueryKey = ["opencode", "messages", opcodeUrl, sessionID, directory];
 
       queryClient.setQueryData<MessageListResponse>(
-        ["opencode", "messages", opcodeUrl, sessionID, directory],
-        (old) => old?.filter((msg) => msg.info.id !== optimisticUserID) || [],
+        messagesQueryKey,
+        (old) => {
+          if (!old) return old;
+          const withoutOptimistic = old.filter((msg) => msg.info.id !== optimisticUserID);
+          
+          const existingIdx = withoutOptimistic.findIndex(m => m.info.id === response.info.id);
+          if (existingIdx >= 0) {
+            const updated = [...withoutOptimistic];
+            updated[existingIdx] = { info: response.info, parts: response.parts };
+            return updated;
+          }
+          
+          return [...withoutOptimistic, { info: response.info, parts: response.parts }];
+        },
       );
 
       queryClient.invalidateQueries({
@@ -504,8 +532,12 @@ export const useSendShell = (opcodeUrl: string | null | undefined, directory?: s
         [{ type: "text" as const, content: command }],
         optimisticUserID,
       );
+
+      const messagesQueryKey = ["opencode", "messages", opcodeUrl, sessionID, directory];
+      await queryClient.cancelQueries({ queryKey: messagesQueryKey });
+
       queryClient.setQueryData<MessageListResponse>(
-        ["opencode", "messages", opcodeUrl, sessionID, directory],
+        messagesQueryKey,
         (old) => [...(old || []), userMessage],
       );
 
@@ -520,7 +552,10 @@ export const useSendShell = (opcodeUrl: string | null | undefined, directory?: s
       const { sessionID } = variables;
       queryClient.setQueryData<MessageListResponse>(
         ["opencode", "messages", opcodeUrl, sessionID, directory],
-        (old) => old?.filter((msg) => !msg.info.id.startsWith("optimistic_")),
+        (old) => {
+          if (!old) return old;
+          return old.filter((msg) => !msg.info.id.startsWith("optimistic_"));
+        },
       );
     },
     onSuccess: (data, variables) => {
@@ -529,7 +564,10 @@ export const useSendShell = (opcodeUrl: string | null | undefined, directory?: s
 
       queryClient.setQueryData<MessageListResponse>(
         ["opencode", "messages", opcodeUrl, sessionID, directory],
-        (old) => old?.filter((msg) => msg.info.id !== optimisticUserID) || [],
+        (old) => {
+          if (!old) return old;
+          return old.filter((msg) => msg.info.id !== optimisticUserID);
+        },
       );
 
       queryClient.invalidateQueries({

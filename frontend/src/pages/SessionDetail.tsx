@@ -527,6 +527,7 @@ export function SessionDetail() {
         isOpen={sourceControlOpen}
         onClose={() => setSourceControlOpen(false)}
         currentBranch={repo.currentBranch || repo.branch || "main"}
+        repoName={repo.repoUrl?.split("/").pop()?.replace(".git", "") || repo.localPath || "Repository"}
       />
     </div>
   );
