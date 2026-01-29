@@ -1,12 +1,13 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useSettings } from '@/hooks/useSettings'
-import { Loader2, Check, X, RefreshCw, Trash2, Terminal } from 'lucide-react'
+import { Loader2, X, Trash2, Terminal, FileText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { PodTerminal } from '@/components/terminal/PodTerminal'
 
 interface PodStatus {
   name: string
@@ -19,56 +20,91 @@ interface PodStatus {
 
 export function KubernetesSettings() {
   const { preferences, isLoading, updateSettings } = useSettings()
-  const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'connected' | 'error'>('idle')
-  const [testError, setTestError] = useState<string | null>(null)
-  const [connectionInfo, setConnectionInfo] = useState<{ namespace: string } | null>(null)
   const [pods, setPods] = useState<PodStatus[]>([])
   const [loadingPods, setLoadingPods] = useState(false)
-  const [executingPod, setExecutingPod] = useState<string | null>(null)
-  const [execOutput, setExecOutput] = useState<string[]>([])
+  const [connectionError, setConnectionError] = useState<string | null>(null)
+  const [viewingLogs, setViewingLogs] = useState<{ name: string; namespace: string } | null>(null)
+  const [logs, setLogs] = useState<string>('')
+  const [loadingLogs, setLoadingLogs] = useState(false)
+  const logsContainerRef = useRef<HTMLDivElement>(null)
+  const [terminalSession, setTerminalSession] = useState<{ name: string; namespace: string } | null>(null)
 
   const k8sConfig = preferences?.kubernetesConfig || {
     enabled: false,
     namespace: 'opencode-testing',
   }
 
-  const testConnection = async () => {
-    setTestStatus('testing')
-    setTestError(null)
+  const loadPods = async () => {
+    setLoadingPods(true)
+    setConnectionError(null)
+    setPods([])
 
     try {
-      const response = await fetch('/api/kubernetes/test-connection', {
+      const testResponse = await fetch('/api/kubernetes/test-connection', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ namespace: k8sConfig.namespace }),
       })
 
-      const result = await response.json()
+      const testResult = await testResponse.json()
 
-      if (result.connected) {
-        setTestStatus('connected')
-        setConnectionInfo({ namespace: result.namespace })
-        await loadPods(result.namespace)
-      } else {
-        setTestStatus('error')
-        setTestError(result.error || 'Connection failed')
+      if (!testResult.connected) {
+        setConnectionError(testResult.error || 'Connection failed')
+        setLoadingPods(false)
+        return
       }
-    } catch (error) {
-      setTestStatus('error')
-      setTestError(error instanceof Error ? error.message : 'Connection failed')
-    }
-  }
 
-  const loadPods = async (namespace?: string) => {
-    setLoadingPods(true)
-
-    try {
-      const ns = namespace || k8sConfig.namespace || 'opencode-testing'
-      const response = await fetch(`/api/kubernetes/pods?namespace=${encodeURIComponent(ns)}`)
+      const response = await fetch(`/api/kubernetes/pods?namespace=${encodeURIComponent(k8sConfig.namespace || 'opencode-testing')}`)
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
+      }
       const data = await response.json()
       setPods(data.pods || [])
+    } catch (error) {
+      setConnectionError(error instanceof Error ? error.message : 'Failed to load pods')
     } finally {
       setLoadingPods(false)
     }
   }
+
+  const viewLogs = async (name: string, namespace: string) => {
+    setViewingLogs({ name, namespace })
+    setLogs('')
+    setLoadingLogs(true)
+    await fetchLogs(name, namespace)
+  }
+
+  const fetchLogs = async (name: string, namespace: string) => {
+    try {
+      const response = await fetch(`/api/kubernetes/pods/${encodeURIComponent(name)}/logs?namespace=${encodeURIComponent(namespace)}&tailLines=100`)
+      const data = await response.json()
+      setLogs(prev => prev === '' ? data.logs || '' : (prev + '\n' + (data.logs || '')).trim())
+    } catch {
+      setLogs(prev => prev + '\nFailed to fetch logs')
+    }
+    setLoadingLogs(false)
+  }
+
+  const closeLogs = () => {
+    setViewingLogs(null)
+    setLogs('')
+  }
+
+  useEffect(() => {
+    if (!viewingLogs) return
+
+    const interval = setInterval(() => {
+      fetchLogs(viewingLogs.name, viewingLogs.namespace)
+    }, 2000)
+
+    return () => clearInterval(interval)
+  }, [viewingLogs])
+
+  useEffect(() => {
+    if (logsContainerRef.current) {
+      logsContainerRef.current.scrollTop = logsContainerRef.current.scrollHeight
+    }
+  }, [logs])
 
   const deletePod = async (name: string, namespace: string) => {
     try {
@@ -77,38 +113,10 @@ export function KubernetesSettings() {
       })
 
       if (response.ok) {
-        await loadPods(namespace)
+        await loadPods()
       }
     } catch {
       // Silently handle error - user will see pods not refreshing
-    }
-  }
-
-  const execInPod = async (name: string, namespace: string) => {
-    setExecutingPod(name)
-    setExecOutput([])
-
-    try {
-      const response = await fetch(`/api/kubernetes/pods/${encodeURIComponent(name)}/exec`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          namespace,
-          command: ['sh', '-c', 'echo "Hello from pod" && hostname && pwd'],
-        }),
-      })
-
-      const result = await response.json()
-
-      if (result.success) {
-        setExecOutput([result.output || '', result.errors || '', `Exit code: ${result.exitCode}`])
-      }
-    } catch (error) {
-      setExecOutput(['Error: ' + (error instanceof Error ? error.message : 'Unknown error')])
-    } finally {
-      setExecutingPod(null)
     }
   }
 
@@ -197,36 +205,23 @@ export function KubernetesSettings() {
               </div>
 
               <div className="flex items-center gap-4">
-                <Button onClick={testConnection} disabled={testStatus === 'testing'}>
-                  {testStatus === 'testing' && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-                  {testStatus === 'connected' && <Check className="h-4 w-4 mr-2" />}
-                  {testStatus === 'error' && <X className="h-4 w-4 mr-2" />}
-                  Test Connection
-                </Button>
-                <Button variant="outline" onClick={() => loadPods()}>
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Refresh Pods
+                <Button onClick={loadPods} disabled={loadingPods}>
+                  {loadingPods && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                  Load Pods
                 </Button>
               </div>
 
-              {testStatus === 'connected' && connectionInfo && (
-                <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
-                  <Check className="h-4 w-4" />
-                  Connected to namespace: {connectionInfo.namespace}
-                </div>
-              )}
-
-              {testStatus === 'error' && testError && (
+              {connectionError && (
                 <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400">
                   <X className="h-4 w-4" />
-                  {testError}
+                  {connectionError}
                 </div>
               )}
             </>
           )}
         </div>
 
-        {k8sConfig.enabled && testStatus === 'connected' && (
+        {k8sConfig.enabled && (pods.length > 0 || loadingPods || connectionError) && (
           <>
             <div className="border-t border-border pt-6">
               <h3 className="text-base font-semibold text-foreground mb-4">Managed Pods</h3>
@@ -234,6 +229,32 @@ export function KubernetesSettings() {
               {loadingPods ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : terminalSession ? (
+                <PodTerminal
+                  podName={terminalSession.name}
+                  namespace={terminalSession.namespace}
+                  onClose={() => setTerminalSession(null)}
+                />
+              ) : viewingLogs ? (
+                <div className="border border-border rounded-md">
+                  <div className="flex items-center justify-between p-3 bg-muted border-b border-border">
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      <span className="font-semibold">{viewingLogs.name}</span>
+                      <Badge variant="outline" className="text-xs">{viewingLogs.namespace}</Badge>
+                    </div>
+                    <Button size="sm" variant="outline" onClick={closeLogs}>Close</Button>
+                  </div>
+                  <div ref={logsContainerRef} className="p-3 bg-black max-h-[400px] overflow-y-auto">
+                    {loadingLogs ? (
+                      <div className="flex items-center justify-center py-4">
+                        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                      </div>
+                    ) : (
+                      <pre className="text-xs text-green-400 whitespace-pre-wrap font-mono">{logs}</pre>
+                    )}
+                  </div>
                 </div>
               ) : pods.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
@@ -271,15 +292,16 @@ export function KubernetesSettings() {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => execInPod(pod.name, pod.namespace)}
-                                disabled={executingPod === pod.name}
+                                onClick={() => viewLogs(pod.name, pod.namespace)}
                               >
-                                {executingPod === pod.name ? (
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  <Terminal className="h-4 w-4" />
-                                )}
-                                Exec
+                                <FileText className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setTerminalSession({ name: pod.name, namespace: pod.namespace })}
+                              >
+                                <Terminal className="h-4 w-4" />
                               </Button>
                               <Button
                                 size="sm"
@@ -290,15 +312,6 @@ export function KubernetesSettings() {
                               </Button>
                             </div>
                           </div>
-
-                          {executingPod === pod.name && execOutput.length > 0 && (
-                            <div className="mt-4 p-3 bg-muted rounded-md">
-                              <div className="text-xs text-muted-foreground mb-2">Exec output:</div>
-                              <pre className="text-xs text-foreground overflow-x-auto whitespace-pre-wrap">
-                                {execOutput.join('\n')}
-                              </pre>
-                            </div>
-                          )}
                         </CardContent>
                       </Card>
                     ))}

@@ -4,6 +4,7 @@ import type { Database } from 'bun:sqlite'
 import { kubernetesService } from '../services/kubernetes'
 import { logger } from '../utils/logger'
 import { SettingsService } from '../services/settings'
+import { ENV } from '@opencode-manager/shared/config/env'
 
 const UpdateK8sConfigSchema = z.object({
   enabled: z.boolean(),
@@ -105,7 +106,9 @@ export function createKubernetesRoutes(db: Database) {
 
   app.post('/test-connection', async (c) => {
     try {
-      const result = await kubernetesService.testConnection()
+      const body = await c.req.json().catch(() => ({}))
+      const namespace = body.namespace || kubernetesService.getCurrentNamespace()
+      const result = await kubernetesService.testConnection(namespace)
       return c.json(result)
     } catch (error) {
       logger.error('Failed to test Kubernetes connection:', error)
@@ -393,6 +396,23 @@ export function createKubernetesRoutes(db: Database) {
       logger.error('Failed to delete service:', error)
       return c.json({ error: 'Failed to delete service' }, 500)
     }
+  })
+
+  app.get('/exec-ws-url', async (c) => {
+    const podName = c.req.query('pod')
+    const namespace = c.req.query('namespace')
+
+    if (!podName || !namespace) {
+      return c.json({ error: 'pod and namespace query parameters required' }, 400)
+    }
+
+    const port = parseInt(ENV.SERVER.PORT) + 1
+    const protocol = c.req.header('x-forwarded-proto') || 'http'
+    const host = c.req.header('host')?.split(':')[0] || 'localhost'
+
+    return c.json({
+      wsUrl: `${protocol === 'https' ? 'wss' : 'ws'}://${host}:${port}/ws/kubernetes/exec?pod=${encodeURIComponent(podName)}&namespace=${encodeURIComponent(namespace)}`,
+    })
   })
 
   return app

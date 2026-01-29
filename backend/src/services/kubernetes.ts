@@ -1,6 +1,6 @@
 import * as k8s from '@kubernetes/client-node'
 import * as fs from 'fs/promises'
-import * as https from 'https'
+import yaml from 'js-yaml'
 import { logger } from '../utils/logger'
 
 interface KubernetesConfig {
@@ -99,21 +99,12 @@ export class KubernetesService {
       if (!exists) {
         throw new Error(`Kubeconfig file not found: ${kubeconfigPath}`)
       }
+
       this.kc.loadFromFile(kubeconfigPath)
+      
       logger.info(`Loaded kubeconfig from: ${kubeconfigPath}`)
 
       this.coreV1Api = this.kc.makeApiClient(k8s.CoreV1Api)
-      
-      const cluster = this.kc.getCurrentCluster()
-      if (cluster?.caData) {
-        const ca = Buffer.from(cluster.caData, 'base64')
-        const httpsAgent = new https.Agent({
-          ca: ca,
-          rejectUnauthorized: true
-        })
-        this.coreV1Api.setDefaultAuthentication(this.kc.getCurrentUser()!)
-        ;(this.coreV1Api as any).requestOptions = { httpsAgent }
-      }
       
       this.config.enabled = true
       logger.info('Kubernetes client initialized successfully')
@@ -124,7 +115,15 @@ export class KubernetesService {
     }
   }
 
-  async testConnection(): Promise<{ connected: boolean; error?: string; namespace?: string }> {
+  private parseKubeconfig(content: string): unknown {
+    try {
+      return JSON.parse(content)
+    } catch {
+      return yaml.load(content)
+    }
+  }
+
+  async testConnection(namespaceParam?: string): Promise<{ connected: boolean; error?: string; namespace?: string }> {
     try {
       if (!this.kc || !this.coreV1Api) {
         await this.initialize()
@@ -134,7 +133,7 @@ export class KubernetesService {
         throw new Error('Kubernetes client not initialized after init')
       }
 
-      const namespace = this.config.namespace || 'default'
+      const namespace = namespaceParam || this.config.namespace || 'default'
       await this.coreV1Api.listNamespacedPod({ namespace })
 
       return { connected: true, namespace }
@@ -184,7 +183,7 @@ export class KubernetesService {
         body: pod
       })
       logger.info(`Created pod: ${options.name} in namespace: ${options.namespace}`)
-      return (result as any).metadata?.name || options.name
+      return (result as { metadata?: { name?: string } }).metadata?.name || options.name
     } catch (error) {
       logger.error(`Failed to create pod ${options.name}:`, error)
       throw error
@@ -219,7 +218,7 @@ export class KubernetesService {
         name,
         namespace
       })
-      return (result as any)
+      return result as k8s.V1Pod
     } catch (error) {
       logger.error(`Failed to get pod ${name}:`, error)
       return null
@@ -239,12 +238,12 @@ export class KubernetesService {
         labelSelector
       })
 
-      const items = (response as any).items || []
+      const items = (response as { items?: k8s.V1Pod[] }).items || []
 
       return items.map((pod: k8s.V1Pod) => {
         const status = pod.status
         const phase = status?.phase || 'Unknown'
-        const ready = pod.status?.containerStatuses?.every((c: any) => c.ready) ?? false
+        const ready = pod.status?.containerStatuses?.every((c: { ready?: boolean }) => c.ready) ?? false
         const startTime = pod.status?.startTime ? new Date(pod.status.startTime).getTime() : Date.now()
         const age = Date.now() - startTime
 
@@ -279,31 +278,31 @@ export class KubernetesService {
       const { Writable } = await import('stream')
 
       const stdoutStream = new Writable({
-        write: (chunk, encoding, callback) => {
+        write: (chunk, _encoding, callback) => {
           stdoutHandler(chunk.toString())
           callback()
         }
       })
 
       const stderrStream = new Writable({
-        write: (chunk, encoding, callback) => {
+        write: (chunk, _encoding, callback) => {
           stderrHandler(chunk.toString())
           callback()
         }
       })
 
-      return new Promise((resolve, reject) => {
+      return new Promise((resolve) => {
         exec.exec(
           namespace,
           name,
-          'runner',
+          undefined,
           command,
           stdoutStream,
           stderrStream,
           null,
           false,
           (status) => {
-            const statusCode = (status as any)?.status?.code || 0
+            const statusCode = (status as { status?: { code?: number } })?.status?.code || 0
             resolve(statusCode)
           }
         )
@@ -323,11 +322,11 @@ export class KubernetesService {
       const result = await this.coreV1Api.readNamespacedPodLog({
         name,
         namespace,
-        container: 'runner',
-        tailLines
+        tailLines,
+        timestamps: true
       })
 
-      return (result as any) || ''
+      return (result as string) || ''
     } catch (error) {
       logger.error(`Failed to get logs for pod ${name}:`, error)
       return ''
@@ -392,7 +391,7 @@ export class KubernetesService {
         body: service
       })
       logger.info(`Created service: ${options.name} in namespace: ${options.namespace}`)
-      return (result as any).metadata?.name || options.name
+      return (result as { metadata?: { name?: string } }).metadata?.name || options.name
     } catch (error) {
       logger.error(`Failed to create service ${options.name}:`, error)
       throw error
@@ -427,7 +426,7 @@ export class KubernetesService {
         name,
         namespace
       })
-      return (result as any)
+      return result as k8s.V1Service
     } catch (error) {
       logger.error(`Failed to get service ${name}:`, error)
       return null
@@ -447,7 +446,7 @@ export class KubernetesService {
         labelSelector
       })
 
-      const items = (response as any).items || []
+      const items = (response as { items?: k8s.V1Service[] }).items || []
 
       return items.map((service: k8s.V1Service) => {
         const creationTime = service.metadata?.creationTimestamp 
@@ -460,7 +459,7 @@ export class KubernetesService {
           namespace: service.metadata?.namespace || '',
           type: service.spec?.type || 'ClusterIP',
           clusterIP: service.spec?.clusterIP,
-          ports: service.spec?.ports?.map((p: any) => ({
+          ports: service.spec?.ports?.map((p: { port: number; targetPort?: number; protocol?: string }) => ({
             port: p.port,
             targetPort: p.targetPort,
             protocol: p.protocol || 'TCP'
