@@ -1,6 +1,6 @@
 import * as k8s from '@kubernetes/client-node'
 import * as fs from 'fs/promises'
-import * as path from 'path'
+import * as https from 'https'
 import { logger } from '../utils/logger'
 
 interface KubernetesConfig {
@@ -103,6 +103,18 @@ export class KubernetesService {
       logger.info(`Loaded kubeconfig from: ${kubeconfigPath}`)
 
       this.coreV1Api = this.kc.makeApiClient(k8s.CoreV1Api)
+      
+      const cluster = this.kc.getCurrentCluster()
+      if (cluster?.caData) {
+        const ca = Buffer.from(cluster.caData, 'base64')
+        const httpsAgent = new https.Agent({
+          ca: ca,
+          rejectUnauthorized: true
+        })
+        this.coreV1Api.setDefaultAuthentication(this.kc.getCurrentUser()!)
+        ;(this.coreV1Api as any).requestOptions = { httpsAgent }
+      }
+      
       this.config.enabled = true
       logger.info('Kubernetes client initialized successfully')
     } catch (error) {

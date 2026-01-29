@@ -263,7 +263,9 @@ services:
 
 ### Certificate Verification Errors
 
-If you see "unable to verify the first certificate" or similar SSL/TLS errors:
+If you see "unable to verify the first certificate" (UNABLE_TO_VERIFY_LEAF_SIGNATURE) or similar SSL/TLS errors:
+
+**Important**: OpenCode Manager has been updated to properly handle CA certificates from your kubeconfig. The Node.js Kubernetes client requires explicit HTTPS agent configuration to trust custom certificate authorities. This is now handled automatically when you have `certificate-authority-data` in your kubeconfig.
 
 **Option 1: Use your existing kubeconfig**
 The easiest solution is to copy your existing working kubeconfig:
