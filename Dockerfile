@@ -81,9 +81,15 @@ RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
 
 FROM base AS builder
 
-COPY --from=deps /app ./
-COPY shared ./shared
-COPY backend ./backend
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY shared/package.json ./shared/
+COPY backend/package.json ./backend/
+COPY frontend/package.json ./frontend/
+
+RUN --mount=type=cache,id=pnpm-builder,target=/root/.local/share/pnpm/store \
+    pnpm install --frozen-lockfile
+
+COPY shared/src ./shared/src
 COPY frontend/src ./frontend/src
 COPY frontend/public ./frontend/public
 COPY frontend/index.html frontend/vite.config.ts frontend/tsconfig*.json frontend/components.json frontend/eslint.config.js ./frontend/
