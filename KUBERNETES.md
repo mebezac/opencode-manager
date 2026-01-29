@@ -80,15 +80,30 @@ kubectl create token opencode-manager -n opencode-testing --duration=8760h
 
 Copy this token - you'll use it to configure OpenCode Manager.
 
-### 3. Configure Kubeconfig
+### 3. Get Cluster CA Certificate
 
-Create a minimal kubeconfig file with your token:
+If your cluster uses HTTPS with a self-signed certificate, you need to add the CA certificate to your kubeconfig:
+
+```bash
+# Get the CA certificate from your cluster
+kubectl config view --raw --minify --flatten -o jsonpath='{.clusters[0].cluster.certificate-authority-data}' > /tmp/ca-cert.base64
+
+# Or get it from the cluster's secret (for in-cluster access)
+kubectl get secret -n kube-system -o jsonpath='{.items[?(@.type=="kubernetes.io/service-account-token")].data.ca\.crt}' | head -1
+```
+
+Convert the base64 certificate to proper format if needed.
+
+### 4. Configure Kubeconfig
+
+Create a minimal kubeconfig file with your token and CA certificate:
 
 ```yaml
 apiVersion: v1
 clusters:
 - cluster:
     server: https://kubernetes.default.svc
+    certificate-authority-data: LS0tLS1CRUdJTi...
   name: kubernetes
 contexts:
 - context:
@@ -102,6 +117,20 @@ users:
 - name: opencode-manager
   user:
     token: <YOUR_TOKEN_HERE>
+```
+
+Replace `<YOUR_TOKEN_HERE>` with the token from step 2 and `certificate-authority-data` with your actual CA certificate in base64 encoding.
+
+## Alternative: Use Existing Kubeconfig
+
+If you already have a working `kubectl` setup with a valid kubeconfig, you can copy that file:
+
+```bash
+# Copy your existing kubeconfig
+cp ~/.kube/config /workspace/.kube/kubeconfig
+
+# Or export the current context only
+kubectl config view --minify --flatten > /workspace/.kube/kubeconfig
 ```
 
 Save this file and provide its path to OpenCode Manager in the Kubernetes settings.
@@ -231,6 +260,56 @@ services:
 2. Check network connectivity to cluster API server
 3. Ensure ServiceAccount token is valid and not expired
 4. Verify RBAC permissions are correctly applied
+
+### Certificate Verification Errors
+
+If you see "unable to verify the first certificate" or similar SSL/TLS errors:
+
+**Option 1: Use your existing kubeconfig**
+The easiest solution is to copy your existing working kubeconfig:
+```bash
+# Copy your current kubeconfig
+kubectl config view --minify --flatten > /workspace/.kube/kubeconfig
+```
+
+**Option 2: Add the CA certificate to your custom kubeconfig**
+
+1. Get the CA certificate from your cluster:
+```bash
+# Get base64-encoded CA certificate from current kubeconfig
+kubectl config view --raw --minify -o jsonpath='{.clusters[0].cluster.certificate-authority-data}'
+
+# Or get from cluster secret
+kubectl get configmap -n kube-system kube-root-ca.crt -o jsonpath='{.data.ca\.crt}' | base64 -w0
+```
+
+2. Add the `certificate-authority-data` field to your kubeconfig:
+```yaml
+apiVersion: v1
+clusters:
+- cluster:
+    server: https://your-cluster-api:6443
+    certificate-authority-data: LS0tLS1CRUdJTi...
+  name: kubernetes
+contexts:
+- context:
+    cluster: kubernetes
+    user: opencode-manager
+  name: opencode-manager
+current-context: opencode-manager
+users:
+- name: opencode-manager
+  user:
+    token: <YOUR_TOKEN>
+```
+
+**Option 3: Using a self-signed certificate**
+
+If you're using a cluster with a custom CA certificate, you need to:
+1. Obtain the CA certificate file from the cluster administrator
+2. Encode it to base64: `base64 -w 0 ca.crt`
+3. Add it to your kubeconfig as `certificate-authority-data`
+4. Or use `certificate-authority` with the file path instead
 
 ### Pod Creation Failed
 
