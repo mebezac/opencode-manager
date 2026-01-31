@@ -5,11 +5,12 @@ import { useGitStatus } from '@/api/git'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Loader2, GitBranch, Check, Plus, AlertCircle, ArrowUp, ArrowDown, Globe } from 'lucide-react'
+import { Loader2, GitBranch, Check, Plus, AlertCircle, ArrowUp, ArrowDown, Globe, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { showToast } from '@/lib/toast'
 import { useGit } from '@/hooks/useGit'
 import { GIT_UI_COLORS } from '@/lib/git-status-styles'
+import { DeleteDialog } from '@/components/ui/delete-dialog'
 
 interface BranchesTabProps {
   repoId: number
@@ -23,6 +24,8 @@ export function BranchesTab({ repoId, currentBranch, repoUrl, isRepoWorktree }: 
   const [newBranchName, setNewBranchName] = useState('')
   const [isCreating, setIsCreating] = useState(false)
   const [useWorktree, setUseWorktree] = useState(false)
+  const [branchToDelete, setBranchToDelete] = useState<string | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
   const git = useGit(repoId)
 
   const { data: status } = useGitStatus(repoId)
@@ -80,6 +83,21 @@ export function BranchesTab({ repoId, currentBranch, repoUrl, isRepoWorktree }: 
       }
     } catch {
       // Error handled by mutation
+    }
+  }
+
+  const handleDeleteBranch = async () => {
+    if (!branchToDelete) return
+    
+    setIsDeleting(true)
+    try {
+      await git.deleteBranch.mutateAsync({ branchName: branchToDelete })
+      setBranchToDelete(null)
+      refetch()
+    } catch {
+      // Error handled by mutation
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -205,6 +223,7 @@ export function BranchesTab({ repoId, currentBranch, repoUrl, isRepoWorktree }: 
               const checkoutName = isRemote ? branch.name.replace(/^remotes\/[^/]+\//, '') : branch.name
 
               const isCheckedOutElsewhere = branch.isWorktree && !isCurrent
+              const canDelete = !isCurrent && !isRemote && !isCheckedOutElsewhere
 
               const handleClick = () => {
                 if (isCurrent || isCheckedOutElsewhere) return
@@ -212,31 +231,47 @@ export function BranchesTab({ repoId, currentBranch, repoUrl, isRepoWorktree }: 
               }
 
               return (
-                <button
+                <div
                   key={branch.name}
                   className={cn(
-                    'flex items-center gap-2 px-3 py-2 w-full text-left transition-colors',
+                    'flex items-center gap-2 px-3 py-2 w-full transition-colors group',
                     isCurrent && 'bg-accent',
-                    isCheckedOutElsewhere ? 'opacity-60 cursor-not-allowed' : 'hover:bg-accent/50'
+                    isCheckedOutElsewhere ? 'opacity-60' : 'hover:bg-accent/50'
                   )}
-                  onClick={handleClick}
-                  disabled={isCurrent || isCheckedOutElsewhere || switchBranchMutation.isPending}
-                  title={isCheckedOutElsewhere ? 'Branch is checked out in another worktree' : undefined}
                 >
-                  {isRemote ? (
-                    <Globe className="w-4 h-4 text-blue-500" />
-                  ) : (
-                    <GitBranch className={cn('w-4 h-4', isCurrent ? GIT_UI_COLORS.current : 'text-muted-foreground')} />
+                  <button
+                    className="flex items-center gap-2 flex-1 text-left min-w-0"
+                    onClick={handleClick}
+                    disabled={isCurrent || isCheckedOutElsewhere || switchBranchMutation.isPending}
+                    title={isCheckedOutElsewhere ? 'Branch is checked out in another worktree' : undefined}
+                  >
+                    {isRemote ? (
+                      <Globe className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                    ) : (
+                      <GitBranch className={cn('w-4 h-4 flex-shrink-0', isCurrent ? GIT_UI_COLORS.current : 'text-muted-foreground')} />
+                    )}
+                    <span className="flex-1 text-sm truncate">{branch.name}</span>
+                    {(isCheckedOutElsewhere || (isCurrent && isRepoWorktree)) && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-400 flex-shrink-0">worktree</span>
+                    )}
+                    {branch.type === 'local' && !branch.upstream && !branch.isWorktree && !(isCurrent && isRepoWorktree) && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground flex-shrink-0">local</span>
+                    )}
+                    {isCurrent && <Check className={`w-4 h-4 flex-shrink-0 ${GIT_UI_COLORS.current}`} />}
+                  </button>
+                  {canDelete && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setBranchToDelete(branch.name)
+                      }}
+                      className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-destructive/10 hover:text-destructive transition-opacity"
+                      title="Delete branch"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   )}
-                  <span className="flex-1 text-sm truncate">{branch.name}</span>
-                  {(isCheckedOutElsewhere || (isCurrent && isRepoWorktree)) && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-400">worktree</span>
-                  )}
-                  {branch.type === 'local' && !branch.upstream && !branch.isWorktree && !(isCurrent && isRepoWorktree) && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">local</span>
-                  )}
-                  {isCurrent && <Check className={`w-4 h-4 ${GIT_UI_COLORS.current}`} />}
-                </button>
+                </div>
               )
             })}
           </div>
@@ -247,6 +282,19 @@ export function BranchesTab({ repoId, currentBranch, repoUrl, isRepoWorktree }: 
           </div>
         )}
       </div>
+
+      <DeleteDialog
+        open={!!branchToDelete}
+        onOpenChange={(open) => {
+          if (!open) setBranchToDelete(null)
+        }}
+        onConfirm={handleDeleteBranch}
+        onCancel={() => setBranchToDelete(null)}
+        title="Delete Branch"
+        description={`Are you sure you want to delete the branch "${branchToDelete}"?`}
+        itemName={branchToDelete || undefined}
+        isDeleting={isDeleting}
+      />
     </div>
   )
 }

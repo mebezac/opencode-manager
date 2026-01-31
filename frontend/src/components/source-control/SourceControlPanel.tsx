@@ -20,6 +20,8 @@ import {
   RefreshCw,
   ArrowDownFromLine,
   X,
+  Github,
+  ExternalLink,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useMobile } from '@/hooks/useMobile'
@@ -69,6 +71,11 @@ export function SourceControlPanel({
   const changesCount = status?.files.length || 0
   const stagedCount = status?.files.filter(f => f.staged).length || 0
 
+  const isGitHubRepo = repoUrl && (repoUrl.includes('github.com') || repoUrl.includes('github:'))
+  const githubUrl = isGitHubRepo && repoUrl
+    ? repoUrl.replace(/^git@github\.com:/, 'https://github.com/').replace(/\.git$/, '')
+    : null
+
   const content = (
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between px-3 py-2 border-b border-border flex-shrink-0">
@@ -93,6 +100,19 @@ export function SourceControlPanel({
           )}
         </div>
         <div className="flex items-center gap-1">
+          {githubUrl && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => window.open(githubUrl, '_blank')}
+              className="h-7 px-2"
+              title="Open on GitHub"
+            >
+              <Github className="w-4 h-4 mr-1" />
+              <span className="text-xs hidden sm:inline">GitHub</span>
+              <ExternalLink className="w-3 h-3 ml-1" />
+            </Button>
+          )}
           <Button
             size="sm"
             variant="ghost"

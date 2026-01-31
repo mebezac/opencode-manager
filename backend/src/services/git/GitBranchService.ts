@@ -142,6 +142,24 @@ export class GitBranchService {
     return result
   }
 
+  async deleteBranch(repoId: number, branchName: string, force: boolean, database: Database): Promise<string> {
+    const repo = getRepoById(database, repoId)
+    if (!repo) {
+      throw new Error(`Repository not found`)
+    }
+
+    const fullPath = path.resolve(repo.fullPath)
+    const env = this.gitAuthService.getGitEnvironment()
+
+    const args = force 
+      ? ['git', '-C', fullPath, 'branch', '-D', branchName]
+      : ['git', '-C', fullPath, 'branch', '-d', branchName]
+
+    const result = await executeCommand(args, { env })
+
+    return result
+  }
+
   async hasCommits(repoPath: string): Promise<boolean> {
     try {
       await executeCommand(['git', '-C', repoPath, 'rev-parse', 'HEAD'], { silent: true })
