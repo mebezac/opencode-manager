@@ -180,6 +180,24 @@ export async function createBranch(id: number, branch: string): Promise<Repo> {
   return response.json()
 }
 
+export async function deleteBranch(id: number, branch: string, force?: boolean): Promise<{ branches: GitBranch[], status: { ahead: number, behind: number } }> {
+  const url = new URL(`${API_BASE_URL}/api/repos/${id}/git/branches/${encodeURIComponent(branch)}`)
+  if (force) {
+    url.searchParams.set('force', 'true')
+  }
+  
+  const response = await fetch(url.toString(), {
+    method: 'DELETE',
+  })
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.error || 'Failed to delete branch')
+  }
+
+  return response.json()
+}
+
 export async function downloadRepo(id: number, repoName: string): Promise<void> {
   const response = await fetch(`${API_BASE_URL}/api/repos/${id}/download`)
 

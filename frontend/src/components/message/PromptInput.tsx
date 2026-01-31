@@ -544,6 +544,7 @@ export const PromptInput = forwardRef<PromptInputHandle, PromptInputProps>(funct
     if (showMentionSuggestions && mentionItems.length > 0) {
       if (e.key === 'ArrowDown') {
         e.preventDefault()
+        e.stopPropagation()
         setSelectedMentionIndex(prev => 
           prev < mentionItems.length - 1 ? prev + 1 : prev
         )
@@ -552,12 +553,14 @@ export const PromptInput = forwardRef<PromptInputHandle, PromptInputProps>(funct
       
       if (e.key === 'ArrowUp') {
         e.preventDefault()
+        e.stopPropagation()
         setSelectedMentionIndex(prev => prev > 0 ? prev - 1 : 0)
         return
       }
       
       if (e.key === 'Enter') {
         e.preventDefault()
+        e.stopPropagation()
         if (mentionItems[selectedMentionIndex]) {
           handleMentionSelect(mentionItems[selectedMentionIndex])
         }
@@ -566,6 +569,7 @@ export const PromptInput = forwardRef<PromptInputHandle, PromptInputProps>(funct
       
       if (e.key === 'Escape') {
         e.preventDefault()
+        e.stopPropagation()
         setShowMentionSuggestions(false)
         setMentionQuery('')
         setMentionRange(null)
@@ -599,6 +603,7 @@ export const PromptInput = forwardRef<PromptInputHandle, PromptInputProps>(funct
       
       if (e.key === 'Escape') {
         e.preventDefault()
+        e.stopPropagation()
         setShowSuggestions(false)
         setSuggestionQuery('')
         setSelectedCommandIndex(0)

@@ -327,5 +327,32 @@ export function createRepoGitRoutes(database: Database, gitAuthService: GitAuthS
     }
   })
 
+  app.delete('/:id/git/branches/:branch', async (c) => {
+    try {
+      const id = parseInt(c.req.param('id'))
+      const branchName = c.req.param('branch')
+      const force = c.req.query('force') === 'true'
+
+      if (!branchName) {
+        return c.json({ error: 'branch is required' }, 400)
+      }
+
+      const repo = db.getRepoById(database, id)
+      if (!repo) {
+        return c.json({ error: 'Repo not found' }, 404)
+      }
+
+      await gitBranchService.deleteBranch(id, branchName, force, database)
+
+      const branches = await gitBranchService.getBranches(id, database)
+      const status = await gitBranchService.getBranchStatus(id, database)
+
+      return c.json({ branches, status })
+    } catch (error: unknown) {
+      logger.error('Failed to delete branch:', error)
+      return c.json({ error: getErrorMessage(error) }, 500)
+    }
+  })
+
   return app
 }

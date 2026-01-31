@@ -221,7 +221,7 @@ export function KubernetesSettings() {
           )}
         </div>
 
-        {k8sConfig.enabled && (pods.length > 0 || loadingPods || connectionError) && (
+        {k8sConfig.enabled && (
           <>
             <div className="border-t border-border pt-6">
               <h3 className="text-base font-semibold text-foreground mb-4">Managed Pods</h3>

@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { gitFetch, gitPull, gitPush, gitCommit, gitStageFiles, gitUnstageFiles, fetchGitLog, fetchGitDiff, gitReset, getApiErrorMessage } from '@/api/git'
-import { createBranch, switchBranch } from '@/api/repos'
+import { createBranch, switchBranch, deleteBranch } from '@/api/repos'
 import { showToast } from '@/lib/toast'
 
 export function useGit(repoId: number | undefined) {
@@ -144,6 +144,20 @@ export function useGit(repoId: number | undefined) {
     },
   })
 
+  const deleteBranchMutation = useMutation({
+    mutationFn: ({ branchName, force }: { branchName: string; force?: boolean }) => {
+      if (!repoId) throw new Error('No repo ID')
+      return deleteBranch(repoId, branchName, force)
+    },
+    onSuccess: () => {
+      invalidateCache(['branches'])
+      showToast.success('Branch deleted')
+    },
+    onError: (error) => {
+      showToast.error(getApiErrorMessage(error))
+    },
+  })
+
   const resetMutation = useMutation({
     mutationFn: (commitHash: string) => {
       if (!repoId) throw new Error('No repo ID')
@@ -169,6 +183,7 @@ export function useGit(repoId: number | undefined) {
     diff,
     createBranch: createBranchMutation,
     switchBranch: switchBranchMutation,
+    deleteBranch: deleteBranchMutation,
     reset: resetMutation
   }
 }
