@@ -63,7 +63,23 @@ export const DEFAULT_AGENTS_MD = `# OpenCode Manager - Global Agent Instructions
 - **DO NOT** kill or stop processes on ports 5003 or 5551
 - **DO NOT** modify files in the \`.config/opencode\` directory unless explicitly requested
 
-## Dev Server Ports
+## Choosing the Right Tool: Kubernetes vs mise
+
+### Use Kubernetes when:
+- You need isolated testing environments that don't pollute the workspace
+- Running integration tests with specific dependencies (databases, message queues, etc.)
+- Testing deployment configurations
+- The task requires a clean environment without existing workspace state
+
+**Prerequisites:** Kubernetes must be enabled in Settings > Kubernetes
+
+### Use mise when:
+- Kubernetes is disabled or unavailable
+- You need a quick local tool installation (fast, easy tasks)
+- The task benefits from the existing workspace state and files
+- You're doing development work that doesn't require isolation
+
+### Dev Server Ports
 
 When starting dev servers, use the pre-allocated ports 5100-5103:
 - Port 5100: Primary dev server (frontend)
@@ -177,27 +193,62 @@ gh repo view
 
 ## Kubernetes Integration
 
-**Kubernetes** pod management is available for creating isolated testing environments:
+**Kubernetes** pod management is available for creating isolated testing environments.
 
-### When to Use
+### Prerequisites
+Before using Kubernetes:
+1. Check Settings > Kubernetes to verify the integration is **enabled**
+2. Ensure the namespace is configured (default: \`opencode-testing\`)
+3. Test the connection to verify cluster access
+4. If disabled, use mise for local tool management instead
+
+### When to Use Kubernetes
 - Testing code in isolated, clean environments
 - Running integration tests that need specific dependencies
 - Executing commands in containerized environments
 - Testing deployment configurations
+- Creating staging/preview deployments accessible via Ingress
+- Iterative debugging workflows (edit → commit → test in pod)
 
-### Prerequisites
-The Kubernetes integration must be enabled in Settings > Kubernetes:
-1. Enable the integration toggle
-2. Configure the namespace (default: \`opencode-testing\`)
-3. Optionally set a custom kubeconfig path (default: \`/workspace/.kube/kubeconfig\`)
-4. Test the connection to verify cluster access
+### Matching Container Images to Project Requirements
+
+When creating pods, always match the container image to the project's specified versions:
+
+**Check these files for version requirements:**
+- \`mise.toml\` or \`.tool-versions\` - mise version manager
+- \`package.json\` (\`engines.node\`) - Node.js version
+- \`.nvmrc\` or \`.node-version\` - Node.js version
+- \`.python-version\` - Python version
+- \`Dockerfile\` (\`FROM\` image) - Base container image
+- \`Gemfile\` (\`ruby\` directive) - Ruby version
+- \`go.mod\` (\`go\` directive) - Go version
+- \`Cargo.toml\` - Rust version
+- \`pom.xml\` or \`build.gradle\` - Java version
+
+**Always use exact versions:**
+- ✅ Use: \`node:20.11.0-alpine\`
+- ❌ Avoid: \`node:latest\` or \`node:20\`
+
+### Shared PVC Workflow for Iterative Development
+
+For debugging/testing workflows with immediate feedback:
+
+1. **Manager edits code** → commits to git (creates sync point via SHA)
+2. **Spawn ephemeral pod** with:
+   - Same PVC mounted at \`/workspace/repos\`
+   - Commit SHA passed as environment variable
+   - Command: \`git checkout $COMMIT_SHA && <test/build command>\`
+3. **Pod runs tests** in isolated environment with identical file state
+4. **Manager analyzes results**, makes fixes, repeats
+
+**Benefits:** Manager stays responsive, clean environment per iteration, deterministic state via git SHA.
 
 ### Available Operations
 
 **Create a pod:**
 \`\`\`bash
-curl -X POST http://localhost:5003/api/kubernetes/pods \\
-  -H "Content-Type: application/json" \\
+curl -X POST http://localhost:5003/api/kubernetes/pods \
+  -H "Content-Type: application/json" \
   -d '{
     "name": "test-environment",
     "namespace": "opencode-testing",
@@ -214,8 +265,8 @@ curl http://localhost:5003/api/kubernetes/pods?namespace=opencode-testing
 
 **Execute command in pod:**
 \`\`\`bash
-curl -X POST http://localhost:5003/api/kubernetes/pods/test-environment/exec \\
-  -H "Content-Type: application/json" \\
+curl -X POST http://localhost:5003/api/kubernetes/pods/test-environment/exec \
+  -H "Content-Type: application/json" \
   -d '{
     "namespace": "opencode-testing",
     "command": ["npm", "test"]
@@ -234,15 +285,15 @@ curl -X DELETE http://localhost:5003/api/kubernetes/pods/test-environment?namesp
 
 **Cleanup old completed pods:**
 \`\`\`bash
-curl -X POST http://localhost:5003/api/kubernetes/cleanup \\
-  -H "Content-Type: application/json" \\
+curl -X POST http://localhost:5003/api/kubernetes/cleanup \
+  -H "Content-Type: application/json" \
   -d '{"namespace": "opencode-testing"}'
 \`\`\`
 
 **Create a service:**
 \`\`\`bash
-curl -X POST http://localhost:5003/api/kubernetes/services \\
-  -H "Content-Type: application/json" \\
+curl -X POST http://localhost:5003/api/kubernetes/services \
+  -H "Content-Type: application/json" \
   -d '{
     "name": "postgres-service",
     "namespace": "opencode-testing",
@@ -264,8 +315,8 @@ curl -X DELETE http://localhost:5003/api/kubernetes/services/postgres-service?na
 
 **Create an ingress:**
 \`\`\`bash
-curl -X POST http://localhost:5003/api/kubernetes/ingresses \\
-  -H "Content-Type: application/json" \\
+curl -X POST http://localhost:5003/api/kubernetes/ingresses \
+  -H "Content-Type: application/json" \
   -d '{
     "name": "my-app-ingress",
     "namespace": "opencode-testing",
@@ -302,8 +353,8 @@ curl -X DELETE http://localhost:5003/api/kubernetes/ingresses/my-app-ingress?nam
 
 **Example ingress with nginx WebSocket annotations:**
 \`\`\`bash
-curl -X POST http://localhost:5003/api/kubernetes/ingresses \\
-  -H "Content-Type: application/json" \\
+curl -X POST http://localhost:5003/api/kubernetes/ingresses \
+  -H "Content-Type: application/json" \
   -d '{
     "name": "pod-terminal-ingress",
     "namespace": "opencode-testing",
@@ -338,8 +389,8 @@ Here's how to set up a postgres database pod with a service and connect an app p
 
 \`\`\`bash
 # 1. Create postgres pod with app=postgres label
-curl -X POST http://localhost:5003/api/kubernetes/pods \\
-  -H "Content-Type: application/json" \\
+curl -X POST http://localhost:5003/api/kubernetes/pods \
+  -H "Content-Type: application/json" \
   -d '{
     "name": "postgres-db",
     "namespace": "opencode-testing",
@@ -352,8 +403,8 @@ curl -X POST http://localhost:5003/api/kubernetes/pods \\
   }'
 
 # 2. Create service to expose postgres
-curl -X POST http://localhost:5003/api/kubernetes/services \\
-  -H "Content-Type: application/json" \\
+curl -X POST http://localhost:5003/api/kubernetes/services \
+  -H "Content-Type: application/json" \
   -d '{
     "name": "postgres-service",
     "namespace": "opencode-testing",
@@ -362,8 +413,8 @@ curl -X POST http://localhost:5003/api/kubernetes/services \\
   }'
 
 # 3. Create app pod that connects to postgres via service DNS
-curl -X POST http://localhost:5003/api/kubernetes/pods \\
-  -H "Content-Type: application/json" \\
+curl -X POST http://localhost:5003/api/kubernetes/pods \
+  -H "Content-Type: application/json" \
   -d '{
     "name": "my-app",
     "namespace": "opencode-testing",
@@ -377,6 +428,93 @@ curl -X POST http://localhost:5003/api/kubernetes/pods \\
 
 The app pod can now connect to postgres using the DNS name \`postgres-service\` which resolves within the cluster.
 
+### Example: Shared PVC with Git SHA Synchronization
+
+For iterative debugging where OpenCode Manager edits files and ephemeral pods run tests:
+
+\`\`\`bash
+# Create test pod that checks out a specific commit before running tests
+curl -X POST http://localhost:5003/api/kubernetes/pods \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "test-runner-abc123",
+    "namespace": "opencode-testing",
+    "image": "node:20.11.0-alpine",
+    "env": {
+      "COMMIT_SHA": "abc123def456",
+      "REPO_PATH": "/workspace/repos/myapp"
+    },
+    "command": ["sh"],
+    "args": ["-c", "cd $REPO_PATH && git checkout $COMMIT_SHA && npm ci && npm test"]
+  }'
+
+# View test results via logs
+curl http://localhost:5003/api/kubernetes/pods/test-runner-abc123/logs?namespace=opencode-testing
+
+# Clean up after reviewing results
+curl -X DELETE http://localhost:5003/api/kubernetes/pods/test-runner-abc123?namespace=opencode-testing
+\`\`\`
+
+**Workflow:** Manager edits → git commit → spawn pod with that SHA → pod runs tests → manager reviews → repeat
+
+### Example: Staging/Preview Deployment
+
+Create an accessible preview environment:
+
+\`\`\`bash
+# 1. Create pod that builds and serves the app
+curl -X POST http://localhost:5003/api/kubernetes/pods \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "preview-app-abc123",
+    "namespace": "opencode-testing",
+    "image": "node:20.11.0-alpine",
+    "env": {
+      "COMMIT_SHA": "abc123",
+      "REPO_PATH": "/workspace/repos/myapp"
+    },
+    "command": ["sh"],
+    "args": ["-c", "cd $REPO_PATH && git checkout $COMMIT_SHA && npm ci && npm run build && npm start"],
+    "labels": {"app": "preview-abc123"}
+  }'
+
+# 2. Create Service to expose the pod
+curl -X POST http://localhost:5003/api/kubernetes/services \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "preview-service-abc123",
+    "namespace": "opencode-testing",
+    "selector": {"app": "preview-abc123"},
+    "ports": [{"port": 3000, "targetPort": 3000}],
+    "type": "ClusterIP"
+  }'
+
+# 3. Create Ingress for external access
+curl -X POST http://localhost:5003/api/kubernetes/ingresses \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "preview-ingress-abc123",
+    "namespace": "opencode-testing",
+    "rules": [{
+      "host": "preview-abc123.example.com",
+      "http": {
+        "paths": [{
+          "path": "/",
+          "pathType": "Prefix",
+          "backend": {
+            "service": {
+              "name": "preview-service-abc123",
+              "port": {"number": 3000}
+            }
+          }
+        }]
+      }
+    }]
+  }'
+\`\`\`
+
+The preview is now accessible at the configured hostname.
+
 ### Important Notes
 - All pods created are labeled with \`managed-by=opencode-manager\`
 - Pods use \`restartPolicy: Never\` by default
@@ -387,11 +525,14 @@ The app pod can now connect to postgres using the DNS name \`postgres-service\` 
 - Only namespace-scoped operations are allowed (no cluster-wide access)
 - Requires proper RBAC permissions in the Kubernetes cluster
 - Ingress operations require RBAC permissions for \`ingresses\` resource in \`networking.k8s.io\` apiGroup
+- **Protect the manager pod**: When running OpenCode Manager in the same namespace as test pods, exclude it from cleanup operations by adding a label like \`app=opencode-manager\` to the manager deployment and filtering it out in cleanup operations
 
 ## General Guidelines
 
 - This file is merged with any AGENTS.md files in individual repositories
 - Repository-specific instructions take precedence for their respective codebases
+- Always check if Kubernetes is enabled before suggesting isolated environments
+- Prefer mise for simple local tasks when Kubernetes isn't needed or is disabled
 `
 
 async function ensureDefaultConfigExists(): Promise<void> {
