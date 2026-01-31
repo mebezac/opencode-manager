@@ -13,6 +13,8 @@ The Kubernetes integration allows you to:
 - Clean up old pods automatically
 - Use prebuilt container images instead of installing dependencies locally
 - Set up multi-pod environments (e.g., database + application)
+- Share source code between manager and ephemeral pods via PVC
+- Create staging/preview deployments with Services and Ingresses
 
 ## Prerequisites
 
@@ -330,6 +332,269 @@ OpenCode Manager provides an interactive web-based terminal for pods:
 | `/api/kubernetes/ingresses/:name` | GET | Get ingress details |
 | `/api/kubernetes/ingresses/:name` | DELETE | Delete ingress |
 
+## Advanced Workflows
+
+### Matching Container Images to Project Requirements
+
+When creating pods for testing or staging, ensure the container image matches the project's language/runtime version requirements:
+
+**Check these files for version requirements:**
+
+| File | Purpose | Example Values |
+|------|---------|----------------|
+| `mise.toml` or `.tool-versions` | mise version manager | `node 20.11.0`, `python 3.12.0` |
+| `package.json` (`engines.node`) | Node.js version | `"node": ">=20.0.0"` |
+| `.nvmrc` or `.node-version` | Node.js version manager | `20.11.0` |
+| `.python-version` | Python version | `3.12.0` |
+| `Dockerfile` (`FROM` image) | Base container image | `node:20-alpine`, `python:3.12-slim` |
+| `Gemfile` (`ruby` directive) | Ruby version | `ruby "3.2.0"` |
+| `go.mod` (`go` directive) | Go version | `go 1.21` |
+| `Cargo.toml` (`package.rust-version`) | Rust version | `rust-version = "1.75"` |
+| `pom.xml` or `build.gradle` | Java version | `<java.version>21</java.version>` |
+
+**Best Practice:**
+Always specify exact versions in pod image tags rather than using `latest` or major version aliases:
+- ✅ Use: `node:20.11.0-alpine`
+- ❌ Avoid: `node:latest` or `node:20`
+
+**Example - Checking mise.toml:**
+```bash
+# If mise.toml contains:
+# [tools]
+# node = "20.11.0"
+
+# Use this image:
+POST /api/kubernetes/pods
+{
+  "name": "test-runner",
+  "image": "node:20.11.0-alpine",
+  ...
+}
+```
+
+**Example - Checking Dockerfile:**
+```bash
+# If Dockerfile contains:
+# FROM node:20.11.0-alpine
+
+# Use the same image for testing:
+POST /api/kubernetes/pods
+{
+  "name": "test-runner",
+  "image": "node:20.11.0-alpine",
+  ...
+}
+```
+
+### Shared PVC with Git-Based State Synchronization
+
+For development workflows where OpenCode Manager edits files and ephemeral pods run tests/builds, use a shared PVC mounted by both:
+
+**Architecture:**
+```
+┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
+│  OpenCode       │────▶│  Shared PVC      │◄────│  Ephemeral Pods │
+│  Manager        │     │  (Longhorn RWX)  │     │  (test/build)   │
+│  (edits files)  │     │                  │     │  (staging)      │
+└─────────────────┘     └──────────────────┘     └─────────────────┘
+          │                        │                       │
+          ▼                        ▼                       ▼
+   Git commits as           Mount /workspace/repos   Checkout SHA
+   "sync points"            Same filesystem view      Run task
+```
+
+**Why Git Commits for Synchronization:**
+- **Lightweight**: No PVC snapshot overhead
+- **Deterministic**: Commit SHA guarantees identical state
+- **Parallelizable**: Multiple pods can checkout different SHAs simultaneously
+- **Versioned**: Natural rollback via git history
+
+**Setup Requirements:**
+- Storage class supporting `ReadWriteMany` (RWX) access mode (e.g., Longhorn, NFS, EFS)
+- Manager and test pods in same namespace (or cross-namespace PVC with RBAC)
+- Git initialized in the repository
+
+**Workflow:**
+
+1. **Manager makes edits** → commits changes (even WIP commits)
+2. **Spawn test pod** with:
+   - Same PVC mounted
+   - Commit SHA passed as environment variable
+   - Entrypoint checks out the specific commit before running tests
+3. **Pod runs tests/build** → reports results back
+4. **Manager adjusts** → new commit → new pod iteration
+5. **Repeat** until tests pass
+
+**Example Test Pod with Git Checkout:**
+
+```bash
+POST /api/kubernetes/pods
+{
+  "name": "test-runner-abc123",
+  "namespace": "opencode-testing",
+  "image": "node:20-alpine",
+  "env": {
+    "COMMIT_SHA": "abc123def456",
+    "REPO_PATH": "/workspace/repos/myapp"
+  },
+  "command": ["sh"],
+  "args": ["-c", "cd $REPO_PATH && git checkout $COMMIT_SHA && npm ci && npm test"]
+}
+```
+
+**RBAC for PVC Access:**
+
+Add PVC permissions to the ServiceAccount:
+
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: opencode-manager
+  namespace: opencode-testing
+rules:
+- apiGroups: [""]
+  resources: ["pods", "pods/log", "pods/exec", "services", "ingresses", "persistentvolumeclaims"]
+  verbs: ["get", "list", "create", "delete", "exec"]
+- apiGroups: ["networking.k8s.io"]
+  resources: ["ingresses"]
+  verbs: ["get", "list", "create", "delete"]
+```
+
+### Debug/Test Loop Workflow
+
+Use ephemeral pods for iterative debugging without consuming manager resources:
+
+**Pattern:**
+1. Edit code in OpenCode Manager
+2. Create WIP commit: `git add . && git commit -m "wip: debugging test failure"`
+3. Spawn ephemeral pod with that commit SHA
+4. Pod runs tests and reports failure
+5. Manager analyzes results, makes fixes
+6. New commit → new pod
+7. Continue until tests pass
+
+**Benefits:**
+- Manager stays responsive (not running CPU-intensive tasks)
+- Clean environment per iteration
+- Previous test pods remain for comparison (until cleanup)
+- Full isolation between test runs
+
+**Example API Sequence:**
+
+```bash
+# 1. Manager makes edits and commits
+# (Handled by OpenCode Manager UI/tools)
+
+# 2. Create test pod with specific commit
+curl -X POST http://localhost:5003/api/kubernetes/pods \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "test-iteration-1",
+    "namespace": "opencode-testing",
+    "image": "node:20-alpine",
+    "env": {
+      "COMMIT_SHA": "a1b2c3d4",
+      "REPO_PATH": "/workspace/repos/myapp"
+    },
+    "command": ["sh"],
+    "args": ["-c", "cd $REPO_PATH && git checkout $COMMIT_SHA && npm ci && npm run test:ci"]
+  }'
+
+# 3. Check test results via logs
+curl http://localhost:5003/api/kubernetes/pods/test-iteration-1/logs?namespace=opencode-testing
+
+# 4. If tests fail, manager fixes code and repeats with new commit
+# 5. Once tests pass, cleanup old pods
+curl -X POST http://localhost:5003/api/kubernetes/cleanup \
+  -H "Content-Type: application/json" \
+  -d '{"namespace": "opencode-testing"}'
+```
+
+### Staging/Preview Deployments
+
+Create accessible preview environments using Services and Ingresses:
+
+**Pattern:**
+1. Build app in ephemeral pod with shared PVC
+2. Create Service to expose the pod
+3. Create Ingress for external access
+4. User can interact with the deployed app
+5. Cleanup when done
+
+**Example: Node.js App Preview:**
+
+```bash
+# 1. Create build pod that stays running
+curl -X POST http://localhost:5003/api/kubernetes/pods \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "preview-app-abc123",
+    "namespace": "opencode-testing",
+    "image": "node:20-alpine",
+    "env": {
+      "COMMIT_SHA": "abc123",
+      "REPO_PATH": "/workspace/repos/myapp",
+      "PORT": "3000"
+    },
+    "command": ["sh"],
+    "args": ["-c", "cd $REPO_PATH && git checkout $COMMIT_SHA && npm ci && npm run build && npm start"],
+    "labels": {"app": "preview-abc123"}
+  }'
+
+# 2. Create Service to expose the pod
+curl -X POST http://localhost:5003/api/kubernetes/services \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "preview-service-abc123",
+    "namespace": "opencode-testing",
+    "selector": {"app": "preview-abc123"},
+    "ports": [{"port": 3000, "targetPort": 3000}],
+    "type": "ClusterIP"
+  }'
+
+# 3. Create Ingress for external access
+curl -X POST http://localhost:5003/api/kubernetes/ingresses \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "preview-ingress-abc123",
+    "namespace": "opencode-testing",
+    "rules": [{
+      "host": "preview-abc123.example.com",
+      "http": {
+        "paths": [{
+          "path": "/",
+          "pathType": "Prefix",
+          "backend": {
+            "service": {
+              "name": "preview-service-abc123",
+              "port": {"number": 3000}
+            }
+          }
+        }]
+      }
+    }]
+  }'
+```
+
+**Accessing the Preview:**
+- The app is now accessible at `http://preview-abc123.example.com`
+- DNS must be configured to point to your ingress controller
+- Multiple previews can run simultaneously with different hostnames
+
+**Cleanup When Done:**
+
+```bash
+# Delete ingress
+curl -X DELETE http://localhost:5003/api/kubernetes/ingresses/preview-ingress-abc123?namespace=opencode-testing
+
+# Delete service
+curl -X DELETE http://localhost:5003/api/kubernetes/services/preview-service-abc123?namespace=opencode-testing
+
+# Delete pod
+curl -X DELETE http://localhost:5003/api/kubernetes/pods/preview-app-abc123?namespace=opencode-testing
+```
+
 ## Docker Compose Configuration
 
 When running OpenCode Manager in Docker, ensure the container can access your Kubernetes cluster:
@@ -458,6 +723,7 @@ The RBAC configuration follows the principle of least privilege:
 4. **Regular cleanup**: Use the cleanup feature to remove old pods
 5. **Monitor usage**: Watch pod usage patterns in your cluster
 6. **Use proper TLS**: Mount CA certificates via NODE_EXTRA_CA_CERTS for self-signed clusters
+7. **Protect the manager pod**: When running OpenCode Manager in the same namespace as ephemeral pods, ensure cleanup operations don't terminate the manager. Add a distinct label (e.g., `app=opencode-manager`) to the manager pod/deployment and filter it out in cleanup operations
 
 ## Example Use Cases
 
