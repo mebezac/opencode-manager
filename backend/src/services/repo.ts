@@ -307,7 +307,7 @@ export async function cloneRepo(
   const repo = db.createRepo(database, createRepoInput)
 
   try {
-    const env = gitAuthService.getGitEnvironment()
+    const env = gitAuthService.getGitEnvironment(false, normalizedRepoUrl)
 
     if (shouldUseWorktree) {
       logger.info(`Creating worktree for branch: ${branch}`)
@@ -500,7 +500,7 @@ export async function switchBranch(
   
   try {
     const repoPath = path.resolve(getReposPath(), repo.localPath)
-    const env = gitAuthService.getGitEnvironment()
+    const env = gitAuthService.getGitEnvironment(false, repo.repoUrl, repo.gitCredentialName)
 
     const sanitizedBranch = branch
       .replace(/^refs\/heads\//, '')
@@ -530,7 +530,7 @@ export async function createBranch(database: Database, gitAuthService: GitAuthSe
   
   try {
     const repoPath = path.resolve(getReposPath(), repo.localPath)
-    const env = gitAuthService.getGitEnvironment()
+    const env = gitAuthService.getGitEnvironment(false, repo.repoUrl, repo.gitCredentialName)
     
     const sanitizedBranch = branch
       .replace(/^refs\/heads\//, '')
@@ -564,7 +564,7 @@ export async function pullRepo(
   }
   
   try {
-    const env = gitAuthService.getGitEnvironment()
+    const env = gitAuthService.getGitEnvironment(false, repo.repoUrl, repo.gitCredentialName)
 
     logger.info(`Pulling repo: ${repo.repoUrl}`)
     await executeCommand(['git', '-C', path.resolve(getReposPath(), repo.localPath), 'pull'], { env })

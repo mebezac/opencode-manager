@@ -324,5 +324,33 @@ app.get('/', async (c) => {
     }
   })
   
+  app.post('/:id/credential', async (c) => {
+    try {
+      const id = parseInt(c.req.param('id'))
+      const repo = db.getRepoById(database, id)
+      
+      if (!repo) {
+        return c.json({ error: 'Repo not found' }, 404)
+      }
+      
+      const body = await c.req.json()
+      const { credentialName } = body
+      
+      if (credentialName !== undefined && typeof credentialName !== 'string') {
+        return c.json({ error: 'credentialName must be a string or undefined' }, 400)
+      }
+      
+      db.updateRepoGitCredential(database, id, credentialName)
+      
+      logger.info(`Updated credential for repo ${id} to '${credentialName || 'default'}'`)
+      
+      const updatedRepo = db.getRepoById(database, id)
+      return c.json(updatedRepo)
+    } catch (error: unknown) {
+      logger.error('Failed to update repo credential:', error)
+      return c.json({ error: getErrorMessage(error) }, 500)
+    }
+  })
+  
   return app
 }

@@ -97,6 +97,10 @@ export function getCredentialForHost(credentials: GitCredential[], host: string)
   })
 }
 
+export function getCredentialByName(credentials: GitCredential[], name: string): GitCredential | undefined {
+  return credentials.find(cred => cred.name === name)
+}
+
 export interface GitHubUserInfo {
   name: string | null
   email: string
@@ -200,5 +204,16 @@ export function createGitHubCliEnv(credentials: GitCredential[]): Record<string,
   return {
     GH_TOKEN: githubCred.token,
     GITHUB_TOKEN: githubCred.token
+  }
+}
+
+export function createGitHubCliEnvForCredential(credential: GitCredential | undefined): Record<string, string> {
+  if (!credential) {
+    return {}
+  }
+  
+  return {
+    GH_TOKEN: credential.token,
+    GITHUB_TOKEN: credential.token
   }
 }

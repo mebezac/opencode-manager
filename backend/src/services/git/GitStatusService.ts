@@ -16,7 +16,7 @@ export class GitStatusService {
       }
 
       const repoPath = repo.fullPath
-      const env = this.gitAuthService.getGitEnvironment()
+      const env = this.gitAuthService.getGitEnvironment(true, repo.repoUrl, repo.gitCredentialName)
 
       const [branch, branchStatus, porcelainOutput] = await Promise.all([
         this.getCurrentBranch(repoPath, env),

@@ -17,7 +17,7 @@ export class GitCommitService {
       }
 
       const repoPath = repo.fullPath
-      const authEnv = this.gitAuthService.getGitEnvironment()
+      const authEnv = this.gitAuthService.getGitEnvironment(false, repo.repoUrl, repo.gitCredentialName)
 
       // Get identity env
       const settingsService = new SettingsService(database)
@@ -52,7 +52,7 @@ export class GitCommitService {
       }
 
       const repoPath = repo.fullPath
-      const env = this.gitAuthService.getGitEnvironment()
+      const env = this.gitAuthService.getGitEnvironment(false, repo.repoUrl, repo.gitCredentialName)
 
       if (paths.length === 0) {
         return ''
@@ -76,7 +76,7 @@ export class GitCommitService {
       }
 
       const repoPath = repo.fullPath
-      const env = this.gitAuthService.getGitEnvironment()
+      const env = this.gitAuthService.getGitEnvironment(false, repo.repoUrl, repo.gitCredentialName)
 
       if (paths.length === 0) {
         return ''
@@ -102,7 +102,7 @@ export class GitCommitService {
       }
 
       const repoPath = repo.fullPath
-      const env = this.gitAuthService.getGitEnvironment()
+      const env = this.gitAuthService.getGitEnvironment(false, repo.repoUrl, repo.gitCredentialName)
 
       const args = ['git', '-C', repoPath, 'reset', '--hard', commitHash]
       const result = await executeCommand(args, { env })

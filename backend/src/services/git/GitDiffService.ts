@@ -18,7 +18,7 @@ export class GitDiffService implements GitDiffProvider {
     }
 
     const repoPath = path.resolve(getReposPath(), repo.localPath)
-    const env = this.gitAuthService.getGitEnvironment()
+    const env = this.gitAuthService.getGitEnvironment(true, repo.repoUrl, repo.gitCredentialName)
 
     const includeStaged = options?.includeStaged ?? true
 

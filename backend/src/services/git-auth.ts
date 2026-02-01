@@ -9,7 +9,7 @@ export class GitAuthService {
     this.askpassHandler = new AskpassHandler(ipcServer, database)
   }
 
-  getGitEnvironment(silent: boolean = false): Record<string, string> {
+  getGitEnvironment(silent: boolean = false, repoUrl?: string, credentialName?: string): Record<string, string> {
     const env: Record<string, string> = {
       GIT_TERMINAL_PROMPT: '0',
       LANG: 'en_US.UTF-8',
@@ -21,6 +21,8 @@ export class GitAuthService {
     }
 
     if (this.askpassHandler) {
+      this.askpassHandler.setCurrentRepoUrl(repoUrl || null)
+      this.askpassHandler.setPreferredCredentialName(credentialName || null)
       Object.assign(env, this.askpassHandler.getEnv())
     }
 
