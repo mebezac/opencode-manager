@@ -56,7 +56,7 @@ export function createKubernetesRoutes(db: Database) {
 
       const k8sConfig = settings.preferences.kubernetesConfig || {
         enabled: false,
-        namespace: 'opencode-testing',
+        namespace: 'opencode-manager',
       }
 
       const connectionStatus = k8sConfig.enabled

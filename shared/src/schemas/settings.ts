@@ -66,7 +66,7 @@ export type KubernetesConfig = z.infer<typeof KubernetesConfigSchema>;
 
 export const DEFAULT_KUBERNETES_CONFIG: KubernetesConfig = {
   enabled: false,
-  namespace: 'opencode-testing',
+  namespace: 'opencode-manager',
 };
 
 export const UserPreferencesSchema = z.object({

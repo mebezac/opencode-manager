@@ -166,7 +166,7 @@ gh repo view
 ### Prerequisites
 Before using Kubernetes:
 1. Check Settings > Kubernetes to verify the integration is **enabled**
-2. Ensure the namespace is configured (default: \`opencode-testing\`)
+2. Ensure the namespace is configured (default: \`opencode-manager\`)
 3. Test the connection to verify cluster access
 4. If disabled, use mise for local tool management instead
 
@@ -219,7 +219,7 @@ curl -X POST http://localhost:5003/api/kubernetes/pods \
   -H "Content-Type: application/json" \
   -d '{
     "name": "test-environment",
-    "namespace": "opencode-testing",
+    "namespace": "opencode-manager",
     "image": "node:20-alpine",
     "command": ["/bin/sh"],
     "args": ["-c", "sleep 3600"]
@@ -228,7 +228,7 @@ curl -X POST http://localhost:5003/api/kubernetes/pods \
 
 **List pods:**
 \`\`\`bash
-curl http://localhost:5003/api/kubernetes/pods?namespace=opencode-testing
+curl http://localhost:5003/api/kubernetes/pods?namespace=opencode-manager
 \`\`\`
 
 **Execute command in pod:**
@@ -236,26 +236,26 @@ curl http://localhost:5003/api/kubernetes/pods?namespace=opencode-testing
 curl -X POST http://localhost:5003/api/kubernetes/pods/test-environment/exec \
   -H "Content-Type: application/json" \
   -d '{
-    "namespace": "opencode-testing",
+    "namespace": "opencode-manager",
     "command": ["npm", "test"]
   }'
 \`\`\`
 
 **Get pod logs:**
 \`\`\`bash
-curl http://localhost:5003/api/kubernetes/pods/test-environment/logs?namespace=opencode-testing&tailLines=100
+curl http://localhost:5003/api/kubernetes/pods/test-environment/logs?namespace=opencode-manager&tailLines=100
 \`\`\`
 
 **Delete pod:**
 \`\`\`bash
-curl -X DELETE http://localhost:5003/api/kubernetes/pods/test-environment?namespace=opencode-testing
+curl -X DELETE http://localhost:5003/api/kubernetes/pods/test-environment?namespace=opencode-manager
 \`\`\`
 
 **Cleanup old completed pods:**
 \`\`\`bash
 curl -X POST http://localhost:5003/api/kubernetes/cleanup \
   -H "Content-Type: application/json" \
-  -d '{"namespace": "opencode-testing"}'
+  -d '{"namespace": "opencode-manager"}'
 \`\`\`
 
 **Create a service:**
@@ -264,7 +264,7 @@ curl -X POST http://localhost:5003/api/kubernetes/services \
   -H "Content-Type: application/json" \
   -d '{
     "name": "postgres-service",
-    "namespace": "opencode-testing",
+    "namespace": "opencode-manager",
     "selector": {"app": "postgres"},
     "ports": [{"port": 5432, "targetPort": 5432}],
     "type": "ClusterIP"
@@ -273,12 +273,12 @@ curl -X POST http://localhost:5003/api/kubernetes/services \
 
 **List services:**
 \`\`\`bash
-curl http://localhost:5003/api/kubernetes/services?namespace=opencode-testing
+curl http://localhost:5003/api/kubernetes/services?namespace=opencode-manager
 \`\`\`
 
 **Delete service:**
 \`\`\`bash
-curl -X DELETE http://localhost:5003/api/kubernetes/services/postgres-service?namespace=opencode-testing
+curl -X DELETE http://localhost:5003/api/kubernetes/services/postgres-service?namespace=opencode-manager
 \`\`\`
 
 **Create an ingress:**
@@ -287,7 +287,7 @@ curl -X POST http://localhost:5003/api/kubernetes/ingresses \
   -H "Content-Type: application/json" \
   -d '{
     "name": "my-app-ingress",
-    "namespace": "opencode-testing",
+    "namespace": "opencode-manager",
     "rules": [{
       "host": "myapp.example.com",
       "http": {
@@ -311,12 +311,12 @@ curl -X POST http://localhost:5003/api/kubernetes/ingresses \
 
 **List ingresses:**
 \`\`\`bash
-curl http://localhost:5003/api/kubernetes/ingresses?namespace=opencode-testing
+curl http://localhost:5003/api/kubernetes/ingresses?namespace=opencode-manager
 \`\`\`
 
 **Delete an ingress:**
 \`\`\`bash
-curl -X DELETE http://localhost:5003/api/kubernetes/ingresses/my-app-ingress?namespace=opencode-testing
+curl -X DELETE http://localhost:5003/api/kubernetes/ingresses/my-app-ingress?namespace=opencode-manager
 \`\`\`
 
 **Example ingress with nginx WebSocket annotations:**
@@ -325,7 +325,7 @@ curl -X POST http://localhost:5003/api/kubernetes/ingresses \
   -H "Content-Type: application/json" \
   -d '{
     "name": "pod-terminal-ingress",
-    "namespace": "opencode-testing",
+    "namespace": "opencode-manager",
     "rules": [{
       "host": "terminal.example.com",
       "http": {
@@ -361,7 +361,7 @@ curl -X POST http://localhost:5003/api/kubernetes/pods \
   -H "Content-Type: application/json" \
   -d '{
     "name": "postgres-db",
-    "namespace": "opencode-testing",
+    "namespace": "opencode-manager",
     "image": "postgres:15-alpine",
     "labels": {"app": "postgres"},
     "env": {
@@ -375,7 +375,7 @@ curl -X POST http://localhost:5003/api/kubernetes/services \
   -H "Content-Type: application/json" \
   -d '{
     "name": "postgres-service",
-    "namespace": "opencode-testing",
+    "namespace": "opencode-manager",
     "selector": {"app": "postgres"},
     "ports": [{"port": 5432, "targetPort": 5432}]
   }'
@@ -385,7 +385,7 @@ curl -X POST http://localhost:5003/api/kubernetes/pods \
   -H "Content-Type: application/json" \
   -d '{
     "name": "my-app",
-    "namespace": "opencode-testing",
+    "namespace": "opencode-manager",
     "image": "node:20-alpine",
     "env": {
       "DATABASE_URL": "postgresql://postgres:test123@postgres-service:5432/myapp"
@@ -406,7 +406,7 @@ curl -X POST http://localhost:5003/api/kubernetes/pods \
   -H "Content-Type: application/json" \
   -d '{
     "name": "test-runner-abc123",
-    "namespace": "opencode-testing",
+    "namespace": "opencode-manager",
     "image": "node:20.11.0-alpine",
     "env": {
       "COMMIT_SHA": "abc123def456",
@@ -417,10 +417,10 @@ curl -X POST http://localhost:5003/api/kubernetes/pods \
   }'
 
 # View test results via logs
-curl http://localhost:5003/api/kubernetes/pods/test-runner-abc123/logs?namespace=opencode-testing
+curl http://localhost:5003/api/kubernetes/pods/test-runner-abc123/logs?namespace=opencode-manager
 
 # Clean up after reviewing results
-curl -X DELETE http://localhost:5003/api/kubernetes/pods/test-runner-abc123?namespace=opencode-testing
+curl -X DELETE http://localhost:5003/api/kubernetes/pods/test-runner-abc123?namespace=opencode-manager
 \`\`\`
 
 **Workflow:** Manager edits → git commit → spawn pod with that SHA → pod runs tests → manager reviews → repeat
@@ -435,7 +435,7 @@ curl -X POST http://localhost:5003/api/kubernetes/pods \
   -H "Content-Type: application/json" \
   -d '{
     "name": "preview-app-abc123",
-    "namespace": "opencode-testing",
+    "namespace": "opencode-manager",
     "image": "node:20.11.0-alpine",
     "env": {
       "COMMIT_SHA": "abc123",
@@ -451,7 +451,7 @@ curl -X POST http://localhost:5003/api/kubernetes/services \
   -H "Content-Type: application/json" \
   -d '{
     "name": "preview-service-abc123",
-    "namespace": "opencode-testing",
+    "namespace": "opencode-manager",
     "selector": {"app": "preview-abc123"},
     "ports": [{"port": 3000, "targetPort": 3000}],
     "type": "ClusterIP"
@@ -462,7 +462,7 @@ curl -X POST http://localhost:5003/api/kubernetes/ingresses \
   -H "Content-Type: application/json" \
   -d '{
     "name": "preview-ingress-abc123",
-    "namespace": "opencode-testing",
+    "namespace": "opencode-manager",
     "rules": [{
       "host": "preview-abc123.example.com",
       "http": {

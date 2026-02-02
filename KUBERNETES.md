@@ -40,13 +40,13 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: opencode-manager
-  namespace: opencode-testing
+  namespace: opencode-manager
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: opencode-manager
-  namespace: opencode-testing
+  namespace: opencode-manager
 rules:
 - apiGroups: [""]
   resources: ["pods", "pods/log", "pods/exec", "services", "ingresses"]
@@ -59,11 +59,11 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: opencode-manager
-  namespace: opencode-testing
+  namespace: opencode-manager
 subjects:
 - kind: ServiceAccount
   name: opencode-manager
-  namespace: opencode-testing
+  namespace: opencode-manager
 roleRef:
   kind: Role
   name: opencode-manager
@@ -72,7 +72,7 @@ roleRef:
 
 Apply with:
 ```bash
-kubectl create namespace opencode-testing
+kubectl create namespace opencode-manager
 kubectl apply -f rbac.yaml
 ```
 
@@ -81,7 +81,7 @@ kubectl apply -f rbac.yaml
 Generate a long-lived token for authentication:
 
 ```bash
-kubectl create token opencode-manager -n opencode-testing --duration=8760h
+kubectl create token opencode-manager -n opencode-manager --duration=8760h
 ```
 
 Copy this token - you'll use it to configure OpenCode Manager.
@@ -181,7 +181,7 @@ If your kubeconfig already contains the CA certificate in `certificate-authority
 
 1. Go to **Settings → Kubernetes**
 2. Toggle "Enable Kubernetes" to ON
-3. Set your namespace (default: `opencode-testing`)
+3. Set your namespace (default: `opencode-manager`)
 4. Optionally specify a kubeconfig path (default: `/workspace/.kube/kubeconfig`)
 5. Click **Test Connection** to verify
 
@@ -193,7 +193,7 @@ Pods can be created programmatically via the API:
 POST /api/kubernetes/pods
 {
   "name": "test-runner",
-  "namespace": "opencode-testing",
+  "namespace": "opencode-manager",
   "image": "node:20-alpine",
   "command": ["sh"],
   "mountPath": "/workspace",
@@ -214,7 +214,7 @@ Services expose pods and enable inter-pod networking:
 POST /api/kubernetes/services
 {
   "name": "my-service",
-  "namespace": "opencode-testing",
+  "namespace": "opencode-manager",
   "selector": {
     "app": "test-runner"
   },
@@ -242,7 +242,7 @@ Ingresses expose pods and services externally via HTTP/HTTPS routes:
 POST /api/kubernetes/ingresses
 {
   "name": "my-app-ingress",
-  "namespace": "opencode-testing",
+  "namespace": "opencode-manager",
   "rules": [
     {
       "host": "myapp.example.com",
@@ -431,7 +431,7 @@ For development workflows where OpenCode Manager edits files and ephemeral pods 
 POST /api/kubernetes/pods
 {
   "name": "test-runner-abc123",
-  "namespace": "opencode-testing",
+  "namespace": "opencode-manager",
   "image": "node:20-alpine",
   "env": {
     "COMMIT_SHA": "abc123def456",
@@ -451,7 +451,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: opencode-manager
-  namespace: opencode-testing
+  namespace: opencode-manager
 rules:
 - apiGroups: [""]
   resources: ["pods", "pods/log", "pods/exec", "services", "ingresses", "persistentvolumeclaims"]
@@ -491,7 +491,7 @@ curl -X POST http://localhost:5003/api/kubernetes/pods \
   -H "Content-Type: application/json" \
   -d '{
     "name": "test-iteration-1",
-    "namespace": "opencode-testing",
+    "namespace": "opencode-manager",
     "image": "node:20-alpine",
     "env": {
       "COMMIT_SHA": "a1b2c3d4",
@@ -502,13 +502,13 @@ curl -X POST http://localhost:5003/api/kubernetes/pods \
   }'
 
 # 3. Check test results via logs
-curl http://localhost:5003/api/kubernetes/pods/test-iteration-1/logs?namespace=opencode-testing
+curl http://localhost:5003/api/kubernetes/pods/test-iteration-1/logs?namespace=opencode-manager
 
 # 4. If tests fail, manager fixes code and repeats with new commit
 # 5. Once tests pass, cleanup old pods
 curl -X POST http://localhost:5003/api/kubernetes/cleanup \
   -H "Content-Type: application/json" \
-  -d '{"namespace": "opencode-testing"}'
+  -d '{"namespace": "opencode-manager"}'
 ```
 
 ### Staging/Preview Deployments
@@ -530,7 +530,7 @@ curl -X POST http://localhost:5003/api/kubernetes/pods \
   -H "Content-Type: application/json" \
   -d '{
     "name": "preview-app-abc123",
-    "namespace": "opencode-testing",
+    "namespace": "opencode-manager",
     "image": "node:20-alpine",
     "env": {
       "COMMIT_SHA": "abc123",
@@ -547,7 +547,7 @@ curl -X POST http://localhost:5003/api/kubernetes/services \
   -H "Content-Type: application/json" \
   -d '{
     "name": "preview-service-abc123",
-    "namespace": "opencode-testing",
+    "namespace": "opencode-manager",
     "selector": {"app": "preview-abc123"},
     "ports": [{"port": 3000, "targetPort": 3000}],
     "type": "ClusterIP"
@@ -558,7 +558,7 @@ curl -X POST http://localhost:5003/api/kubernetes/ingresses \
   -H "Content-Type: application/json" \
   -d '{
     "name": "preview-ingress-abc123",
-    "namespace": "opencode-testing",
+    "namespace": "opencode-manager",
     "rules": [{
       "host": "preview-abc123.example.com",
       "http": {
@@ -586,13 +586,13 @@ curl -X POST http://localhost:5003/api/kubernetes/ingresses \
 
 ```bash
 # Delete ingress
-curl -X DELETE http://localhost:5003/api/kubernetes/ingresses/preview-ingress-abc123?namespace=opencode-testing
+curl -X DELETE http://localhost:5003/api/kubernetes/ingresses/preview-ingress-abc123?namespace=opencode-manager
 
 # Delete service
-curl -X DELETE http://localhost:5003/api/kubernetes/services/preview-service-abc123?namespace=opencode-testing
+curl -X DELETE http://localhost:5003/api/kubernetes/services/preview-service-abc123?namespace=opencode-manager
 
 # Delete pod
-curl -X DELETE http://localhost:5003/api/kubernetes/pods/preview-app-abc123?namespace=opencode-testing
+curl -X DELETE http://localhost:5003/api/kubernetes/pods/preview-app-abc123?namespace=opencode-manager
 ```
 
 ## Docker Compose Configuration
@@ -735,7 +735,7 @@ Create a pod with Node.js 20 and execute tests:
 POST /api/kubernetes/pods
 {
   "name": "node20-test",
-  "namespace": "opencode-testing",
+  "namespace": "opencode-manager",
   "image": "node:20-alpine",
   "command": ["npm", "test"]
 }
@@ -749,7 +749,7 @@ Use a Python container for Python-based projects:
 POST /api/kubernetes/pods
 {
   "name": "python-test",
-  "namespace": "opencode-testing",
+  "namespace": "opencode-manager",
   "image": "python:3.12-slim",
   "command": ["python", "-m", "pytest"]
 }
@@ -764,7 +764,7 @@ Create a complete postgres + application testing environment:
 POST /api/kubernetes/pods
 {
   "name": "postgres-db",
-  "namespace": "opencode-testing",
+  "namespace": "opencode-manager",
   "image": "postgres:15-alpine",
   "labels": {
     "app": "postgres"
@@ -779,7 +779,7 @@ POST /api/kubernetes/pods
 POST /api/kubernetes/services
 {
   "name": "postgres-service",
-  "namespace": "opencode-testing",
+  "namespace": "opencode-manager",
   "selector": {
     "app": "postgres"
   },
@@ -795,7 +795,7 @@ POST /api/kubernetes/services
 POST /api/kubernetes/pods
 {
   "name": "app-test",
-  "namespace": "opencode-testing",
+  "namespace": "opencode-manager",
   "image": "node:20-alpine",
   "env": {
     "DATABASE_URL": "postgresql://postgres:test123@postgres-service:5432/myapp"
@@ -815,7 +815,7 @@ Create an ingress for the pod terminal WebSocket with nginx annotations:
 POST /api/kubernetes/services
 {
   "name": "pod-terminal-service",
-  "namespace": "opencode-testing",
+  "namespace": "opencode-manager",
   "selector": {
     "app": "test-runner"
   },
@@ -833,7 +833,7 @@ POST /api/kubernetes/services
 POST /api/kubernetes/ingresses
 {
   "name": "pod-terminal-ingress",
-  "namespace": "opencode-testing",
+  "namespace": "opencode-manager",
   "rules": [
     {
       "host": "terminal.example.com",

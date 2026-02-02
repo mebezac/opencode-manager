@@ -31,7 +31,7 @@ export function KubernetesSettings() {
 
   const k8sConfig = preferences?.kubernetesConfig || {
     enabled: false,
-    namespace: 'opencode-testing',
+    namespace: 'opencode-manager',
   }
 
   const loadPods = async () => {
@@ -54,7 +54,7 @@ export function KubernetesSettings() {
         return
       }
 
-      const response = await fetch(`/api/kubernetes/pods?namespace=${encodeURIComponent(k8sConfig.namespace || 'opencode-testing')}`)
+      const response = await fetch(`/api/kubernetes/pods?namespace=${encodeURIComponent(k8sConfig.namespace || 'opencode-manager')}`)
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`)
       }
@@ -180,9 +180,9 @@ export function KubernetesSettings() {
                 <Label htmlFor="namespace">Namespace</Label>
                 <Input
                   id="namespace"
-                  value={k8sConfig.namespace || 'opencode-testing'}
+                  value={k8sConfig.namespace || 'opencode-manager'}
                   onChange={(e) => updateSettings({ kubernetesConfig: { ...k8sConfig, namespace: e.target.value } })}
-                  placeholder="opencode-testing"
+                  placeholder="opencode-manager"
                   className="max-w-sm"
                 />
                 <p className="text-sm text-muted-foreground">
@@ -330,7 +330,7 @@ export function KubernetesSettings() {
                       'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                      namespace: k8sConfig.namespace || 'opencode-testing',
+                      namespace: k8sConfig.namespace || 'opencode-manager',
                     }),
                   })
                   const result = await response.json()
