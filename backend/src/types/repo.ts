@@ -15,4 +15,5 @@ export interface CreateRepoInput {
   clonedAt: number
   isWorktree?: boolean
   isLocal?: boolean
+  gitCredentialName?: string
 }

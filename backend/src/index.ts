@@ -157,6 +157,7 @@ gh repo view
 - Authentication is automatic - token is injected from your settings
 - Works seamlessly with private repositories
 - No manual token management needed
+- **Multiple GitHub PATs:** When multiple GitHub tokens are configured, the system uses the **first** credential for all \`gh\` CLI operations. Ensure your primary token has access to all required repositories, or reorder credentials in Settings so the most versatile token is listed first
 
 ## Kubernetes Integration
 

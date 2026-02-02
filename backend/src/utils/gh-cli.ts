@@ -1,6 +1,6 @@
 import type { Database } from 'bun:sqlite'
 import { executeCommand } from './process'
-import { createGitHubCliEnv } from './git-auth'
+import { createGitHubCliEnv, createGitHubCliEnvForCredential, getCredentialByName } from './git-auth'
 import type { GitCredential } from './git-auth'
 
 interface GhCliOptions {
@@ -26,6 +26,44 @@ export async function executeGhCommand(
   }
 
   const ghEnv = createGitHubCliEnv(gitCredentials)
+  
+  return executeCommand(['gh', ...args], {
+    cwd: options?.cwd,
+    silent: options?.silent,
+    env: ghEnv
+  })
+}
+
+export async function executeGhCommandWithCredential(
+  database: Database,
+  args: string[],
+  credentialName: string | undefined,
+  options?: GhCliOptions
+): Promise<string> {
+  const settingsRow = database.query('SELECT preferences FROM user_preferences WHERE user_id = ?').get('default') as { preferences: string } | null
+  
+  let gitCredentials: GitCredential[] = []
+  if (settingsRow) {
+    try {
+      const prefs = JSON.parse(settingsRow.preferences)
+      gitCredentials = prefs.gitCredentials || []
+    } catch {
+      gitCredentials = []
+    }
+  }
+
+  let ghEnv: Record<string, string>
+  
+  if (credentialName) {
+    const credential = getCredentialByName(gitCredentials, credentialName)
+    if (credential) {
+      ghEnv = createGitHubCliEnvForCredential(credential)
+    } else {
+      ghEnv = createGitHubCliEnv(gitCredentials)
+    }
+  } else {
+    ghEnv = createGitHubCliEnv(gitCredentials)
+  }
   
   return executeCommand(['gh', ...args], {
     cwd: options?.cwd,

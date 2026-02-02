@@ -25,7 +25,7 @@ export class GitBranchService {
     }
 
     const fullPath = path.resolve(repo.fullPath)
-    const env = this.gitAuthService.getGitEnvironment()
+    const env = this.gitAuthService.getGitEnvironment(true, repo.repoUrl, repo.gitCredentialName)
 
     let currentBranch = ''
     try {
@@ -102,7 +102,7 @@ export class GitBranchService {
       }
 
       const fullPath = path.resolve(repo.fullPath)
-      const env = this.gitAuthService.getGitEnvironment()
+      const env = this.gitAuthService.getGitEnvironment(true, repo.repoUrl, repo.gitCredentialName)
 
       const stdout = await executeCommand(['git', '-C', fullPath, 'rev-list', '--left-right', '--count', 'HEAD...@{upstream}'], { env, silent: true })
       const [ahead, behind] = stdout.trim().split(/\s+/).map(Number)
@@ -121,7 +121,7 @@ export class GitBranchService {
     }
 
     const fullPath = path.resolve(repo.fullPath)
-    const env = this.gitAuthService.getGitEnvironment()
+    const env = this.gitAuthService.getGitEnvironment(false, repo.repoUrl, repo.gitCredentialName)
 
     const result = await executeCommand(['git', '-C', fullPath, 'checkout', '-b', branchName], { env })
 
@@ -135,7 +135,7 @@ export class GitBranchService {
     }
 
     const fullPath = path.resolve(repo.fullPath)
-    const env = this.gitAuthService.getGitEnvironment()
+    const env = this.gitAuthService.getGitEnvironment(false, repo.repoUrl, repo.gitCredentialName)
 
     const result = await executeCommand(['git', '-C', fullPath, 'checkout', branchName], { env })
 
@@ -149,7 +149,7 @@ export class GitBranchService {
     }
 
     const fullPath = path.resolve(repo.fullPath)
-    const env = this.gitAuthService.getGitEnvironment()
+    const env = this.gitAuthService.getGitEnvironment(false, repo.repoUrl, repo.gitCredentialName)
 
     const args = force 
       ? ['git', '-C', fullPath, 'branch', '-D', branchName]

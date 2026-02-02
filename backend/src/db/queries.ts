@@ -16,6 +16,7 @@ export interface RepoRow {
   opencode_config_name?: string
   is_worktree?: number
   is_local?: number
+  git_credential_name?: string
 }
 
 function rowToRepo(row: RepoRow): Repo {
@@ -32,6 +33,7 @@ function rowToRepo(row: RepoRow): Repo {
     openCodeConfigName: row.opencode_config_name,
     isWorktree: row.is_worktree ? Boolean(row.is_worktree) : undefined,
     isLocal: row.is_local ? Boolean(row.is_local) : undefined,
+    gitCredentialName: row.git_credential_name,
   }
 }
 
@@ -174,6 +176,11 @@ export function updateLastPulled(db: Database, id: number): void {
 export function updateRepoBranch(db: Database, id: number, branch: string): void {
   const stmt = db.prepare('UPDATE repos SET branch = ? WHERE id = ?')
   stmt.run(branch, id)
+}
+
+export function updateRepoGitCredential(db: Database, id: number, credentialName: string | null): void {
+  const stmt = db.prepare('UPDATE repos SET git_credential_name = ? WHERE id = ?')
+  stmt.run(credentialName, id)
 }
 
 export function deleteRepo(db: Database, id: number): void {

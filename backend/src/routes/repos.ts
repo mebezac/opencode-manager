@@ -23,13 +23,13 @@ export function createRepoRoutes(database: Database, gitAuthService: GitAuthServ
   app.post('/', async (c) => {
     try {
       const body = await c.req.json()
-      const { repoUrl, localPath, branch, openCodeConfigName, useWorktree, provider } = body
+      const { repoUrl, localPath, branch, openCodeConfigName, useWorktree, credentialName } = body
 
       if (!repoUrl && !localPath) {
         return c.json({ error: 'Either repoUrl or localPath is required' }, 400)
       }
 
-      logger.info(`Creating repo - URL: ${repoUrl}, Provider: ${provider || 'auto-detect'}`)
+      logger.info(`Creating repo - URL: ${repoUrl}, Credential: ${credentialName || 'auto-detect'}`)
       
       let repo
       if (localPath) {
@@ -45,7 +45,8 @@ export function createRepoRoutes(database: Database, gitAuthService: GitAuthServ
           gitAuthService,
           repoUrl!,
           branch,
-          useWorktree
+          useWorktree,
+          credentialName
         )
       }
       
@@ -320,6 +321,34 @@ app.get('/', async (c) => {
       return c.json({ success: true })
     } catch (error: unknown) {
       logger.error('Failed to reset permissions:', error)
+      return c.json({ error: getErrorMessage(error) }, 500)
+    }
+  })
+  
+  app.post('/:id/credential', async (c) => {
+    try {
+      const id = parseInt(c.req.param('id'))
+      const repo = db.getRepoById(database, id)
+      
+      if (!repo) {
+        return c.json({ error: 'Repo not found' }, 404)
+      }
+      
+      const body = await c.req.json()
+      const { credentialName } = body
+      
+      if (credentialName !== undefined && typeof credentialName !== 'string') {
+        return c.json({ error: 'credentialName must be a string or undefined' }, 400)
+      }
+      
+      db.updateRepoGitCredential(database, id, credentialName)
+      
+      logger.info(`Updated credential for repo ${id} to '${credentialName || 'default'}'`)
+      
+      const updatedRepo = db.getRepoById(database, id)
+      return c.json(updatedRepo)
+    } catch (error: unknown) {
+      logger.error('Failed to update repo credential:', error)
       return c.json({ error: getErrorMessage(error) }, 500)
     }
   })

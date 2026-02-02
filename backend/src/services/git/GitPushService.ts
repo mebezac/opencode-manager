@@ -24,7 +24,7 @@ export class GitPushService {
       args.push('--set-upstream', 'origin', 'HEAD')
     }
 
-    const env = this.gitAuthService.getGitEnvironment()
+    const env = this.gitAuthService.getGitEnvironment(false, repo.repoUrl, repo.gitCredentialName)
     return executeCommand(args, { env })
   }
 }
