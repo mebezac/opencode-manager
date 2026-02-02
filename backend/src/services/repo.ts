@@ -6,6 +6,7 @@ import type { Repo, CreateRepoInput } from '../types/repo'
 import { logger } from '../utils/logger'
 import { getReposPath } from '@opencode-manager/shared/config/env'
 import type { GitAuthService } from './git-auth'
+import * as gitRemoteService from './git-remote'
 import path from 'path'
 
 interface ErrorWithMessage {
@@ -470,6 +471,24 @@ export async function cloneRepo(
         } else {
           throw error
         }
+      }
+    }
+    
+    if (credentialName) {
+      try {
+        const { SettingsService } = await import('./settings')
+        const settingsService = new SettingsService(database)
+        const settings = settingsService.getSettings()
+        const gitCredentials = settings.preferences.gitCredentials || []
+        const credential = gitCredentials.find(c => c.name === credentialName)
+        
+        if (credential) {
+          const repoPath = path.resolve(getReposPath(), localPath)
+          await gitRemoteService.updateGitRemoteWithCredential(repoPath, 'origin', credential)
+          logger.info(`Embedded credential '${credentialName}' in git remote URL`)
+        }
+      } catch (embedError) {
+        logger.warn(`Failed to embed credential in git remote URL: ${embedError}`)
       }
     }
     

@@ -13,6 +13,8 @@ import { getErrorMessage, getStatusCode } from '../utils/error-utils'
 import { getOpenCodeConfigFilePath, getReposPath } from '@opencode-manager/shared/config/env'
 import { createRepoGitRoutes } from './repo-git'
 import type { GitAuthService } from '../services/git-auth'
+import * as gitRemoteService from '../services/git-remote'
+import { getCredentialByName } from '../utils/git-auth'
 import path from 'path'
 
 export function createRepoRoutes(database: Database, gitAuthService: GitAuthService) {
@@ -254,6 +256,49 @@ app.get('/', async (c) => {
       return c.json({ ...updatedRepo, currentBranch })
     } catch (error: unknown) {
       logger.error('Failed to create branch:', error)
+      return c.json({ error: getErrorMessage(error) }, 500)
+    }
+  })
+
+  app.post('/:id/credential', async (c) => {
+    try {
+      const id = parseInt(c.req.param('id'))
+      const repo = db.getRepoById(database, id)
+      
+      if (!repo) {
+        return c.json({ error: 'Repo not found' }, 404)
+      }
+      
+      const body = await c.req.json()
+      const { credentialName } = body
+      
+      const settingsService = new SettingsService(database)
+      const settings = settingsService.getSettings()
+      const gitCredentials = settings.preferences.gitCredentials || []
+      
+      if (credentialName) {
+        const credential = getCredentialByName(gitCredentials, credentialName)
+        if (!credential) {
+          return c.json({ error: `Credential '${credentialName}' not found` }, 404)
+        }
+        
+        const repoPath = path.resolve(getReposPath(), repo.localPath)
+        await gitRemoteService.updateGitRemoteWithCredential(repoPath, 'origin', credential)
+        
+        db.updateRepoGitCredential(database, id, credentialName)
+        logger.info(`Updated credential for repo ${id} to '${credentialName}'`)
+      } else {
+        const repoPath = path.resolve(getReposPath(), repo.localPath)
+        await gitRemoteService.removeCredentialFromGitRemote(repoPath, 'origin')
+        
+        db.updateRepoGitCredential(database, id, null)
+        logger.info(`Removed credential from repo ${id}`)
+      }
+      
+      const updatedRepo = db.getRepoById(database, id)
+      return c.json(updatedRepo)
+    } catch (error: unknown) {
+      logger.error('Failed to update repo credential:', error)
       return c.json({ error: getErrorMessage(error) }, 500)
     }
   })

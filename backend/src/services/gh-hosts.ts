@@ -42,19 +42,6 @@ export class GhHostsService {
       return credential.username
     }
 
-    try {
-      const parsed = new URL(credential.host)
-      const pathParts = parsed.pathname.split('/').filter(p => p)
-      if (pathParts.length > 0) {
-        return pathParts[0]
-      }
-    } catch {
-      const match = credential.host.match(/github\.com\/([^/]+)/)
-      if (match) {
-        return match[1]
-      }
-    }
-
     return null
   }
 
@@ -62,6 +49,7 @@ export class GhHostsService {
     this.ensureConfigDir()
 
     const hostsConfig: GhHostsFile = {}
+    const usernameForHost = new Map<string, string>()
 
     for (const credential of credentials) {
       const hostname = this.extractHostnameFromCredential(credential)
@@ -70,13 +58,24 @@ export class GhHostsService {
         continue
       }
 
-      const username = this.extractUsernameFromCredential(credential)
-      if (!username) {
-        logger.warn(`Skipping credential '${credential.name}': cannot extract username from '${credential.host}'`)
+      if (credential.username) {
+        const existingUsername = usernameForHost.get(hostname)
+        if (existingUsername && existingUsername !== credential.username) {
+          logger.warn(`Multiple usernames for ${hostname}: '${existingUsername}' vs '${credential.username}'. Using '${existingUsername}' from first credential.`)
+        } else if (!existingUsername) {
+          usernameForHost.set(hostname, credential.username)
+        }
+      }
+    }
+
+    for (const credential of credentials) {
+      const hostname = this.extractHostnameFromCredential(credential)
+      if (!hostname) {
         continue
       }
 
       if (!hostsConfig[hostname]) {
+        const username = usernameForHost.get(hostname) || 'x-access-token'
         hostsConfig[hostname] = {
           oauth_token: credential.token,
           user: username,
@@ -85,17 +84,20 @@ export class GhHostsService {
       }
 
       if (hostsConfig[hostname].users) {
+        const username = usernameForHost.get(hostname) || 'x-access-token'
         hostsConfig[hostname].users![username] = {
           oauth_token: credential.token
         }
       }
 
       if (!hostsConfig[hostname].oauth_token) {
+        const username = usernameForHost.get(hostname) || 'x-access-token'
         hostsConfig[hostname].oauth_token = credential.token
         hostsConfig[hostname].user = username
       }
 
-      logger.info(`Synced credential '${credential.name}' for ${username}@${hostname}`)
+      const displayUsername = usernameForHost.get(hostname) || 'x-access-token'
+      logger.info(`Synced credential '${credential.name}' for ${displayUsername}@${hostname}`)
     }
 
     if (Object.keys(hostsConfig).length === 0) {
