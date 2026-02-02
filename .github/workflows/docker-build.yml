@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   build:
-    if: ${{ (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') || github.event_name == 'release' }}
+    if: ${{ ((github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') || github.event_name == 'release') && !github.event.release.draft }}
     runs-on: ubuntu-latest
     timeout-minutes: 120
     strategy:

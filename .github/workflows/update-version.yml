@@ -9,6 +9,7 @@ permissions:
 
 jobs:
   update-version:
+    if: ${{ !github.event.release.draft }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
