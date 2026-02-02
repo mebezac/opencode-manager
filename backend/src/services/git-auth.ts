@@ -14,6 +14,9 @@ export class GitAuthService {
       GIT_TERMINAL_PROMPT: '0',
       LANG: 'en_US.UTF-8',
       LC_ALL: 'en_US.UTF-8',
+      GIT_CONFIG_COUNT: '1',
+      GIT_CONFIG_KEY_0: 'credential.useHttpPath',
+      GIT_CONFIG_VALUE_0: 'true',
     }
 
     if (silent) {

@@ -47,27 +47,6 @@ export function createGitEnv(credentials: GitCredential[]): Record<string, strin
     return env
   }
 
-  const githubCreds = credentials.filter(cred => {
-    if (!cred.host || !cred.token) return false
-    try {
-      const parsed = new URL(cred.host)
-      return parsed.hostname.toLowerCase() === 'github.com'
-    } catch {
-      return false
-    }
-  })
-
-  if (githubCreds.length === 1) {
-    const cred = githubCreds[0]
-    const host = normalizeHost(cred.host)
-    const username = cred.username || getDefaultUsername(host)
-    const basicAuth = Buffer.from(`${username}:${cred.token}`, 'utf8').toString('base64')
-
-    env.GIT_CONFIG_COUNT = '1'
-    env.GIT_CONFIG_KEY_0 = `http.${host}.extraheader`
-    env.GIT_CONFIG_VALUE_0 = `AUTHORIZATION: basic ${basicAuth}`
-  }
-
   return env
 }
 

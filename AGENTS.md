@@ -103,6 +103,45 @@ Use the `gh` command via the Bash tool for ALL GitHub-related tasks including wo
 - Prefer pnpm over npm for all package management
 - Run `pnpm lint` after completing tasks to ensure code quality
 
+## Multiple Git Credentials (PATs)
+
+OpenCode Manager supports using multiple GitHub Personal Access Tokens (PATs) for different repositories. This is useful when you work with repos from different GitHub organizations that require different access tokens.
+
+### How it works
+
+The system uses Git's `credential.useHttpPath` configuration to match credentials based on the full repository URL path, not just the hostname. This means you can configure separate PATs for different GitHub users or organizations.
+
+### Configuration
+
+In Settings > Git Credentials, add multiple credentials with path-based hosts:
+
+**Example: Personal + Work setup**
+
+1. **Personal PAT**
+   - Name: `Personal`
+   - Host: `https://github.com/your-username`
+   - Token: `ghp_xxx...`
+
+2. **Work Organization PAT**
+   - Name: `Work`
+   - Host: `https://github.com/your-company`
+   - Token: `ghp_yyy...`
+
+**Matching behavior:**
+- Repos under `https://github.com/your-username/*` → Uses Personal PAT
+- Repos under `https://github.com/your-company/*` → Uses Work PAT
+- Each repo automatically gets the correct credential based on its URL path
+
+### Per-repo credential selection
+
+You can also override the automatic selection for specific repositories:
+
+1. Go to the repository in OpenCode Manager
+2. Click "Change Credential" 
+3. Select a specific credential for that repo
+
+This is useful when you have multiple PATs for the same organization and need to assign specific repos to specific tokens.
+
 ## Release Process
 
 When creating a new release:

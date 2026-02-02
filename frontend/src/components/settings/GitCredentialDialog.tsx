@@ -18,7 +18,7 @@ interface GitCredentialDialogProps {
 export function GitCredentialDialog({ open, onOpenChange, onSave, credential, isSaving }: GitCredentialDialogProps) {
   const [formData, setFormData] = useState<GitCredential>({
     name: '',
-    host: '',
+    host: 'https://github.com/',
     token: '',
     username: '',
   })
@@ -83,11 +83,14 @@ export function GitCredentialDialog({ open, onOpenChange, onSave, credential, is
             <Label htmlFor="cred-host">Host URL *</Label>
             <Input
               id="cred-host"
-              placeholder="https://github.com/"
+              placeholder="https://github.com/username-or-org"
               value={formData.host}
               onChange={(e) => setFormData({ ...formData, host: e.target.value })}
               disabled={isSaving}
             />
+            <p className="text-xs text-muted-foreground">
+              Tip: Use https://github.com/username to match specific user/org repos
+            </p>
           </div>
 
           <div className="space-y-2">
