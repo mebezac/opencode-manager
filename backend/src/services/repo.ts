@@ -272,7 +272,8 @@ export async function cloneRepo(
   gitAuthService: GitAuthService,
   repoUrl: string,
   branch?: string,
-  useWorktree: boolean = false
+  useWorktree: boolean = false,
+  credentialName?: string
 ): Promise<Repo> {
   const { url: normalizedRepoUrl, name: repoName } = normalizeRepoUrl(repoUrl)
   const baseRepoDirName = repoName
@@ -298,6 +299,7 @@ export async function cloneRepo(
     defaultBranch: branch || 'main',
     cloneStatus: 'cloning',
     clonedAt: Date.now(),
+    gitCredentialName: credentialName,
   }
   
   if (shouldUseWorktree) {
@@ -307,7 +309,7 @@ export async function cloneRepo(
   const repo = db.createRepo(database, createRepoInput)
 
   try {
-    const env = gitAuthService.getGitEnvironment(false, normalizedRepoUrl)
+    const env = gitAuthService.getGitEnvironment(false, normalizedRepoUrl, credentialName)
 
     if (shouldUseWorktree) {
       logger.info(`Creating worktree for branch: ${branch}`)

@@ -24,6 +24,7 @@ export const CreateRepoRequestSchema = z.object({
   branch: z.string().optional(),
   openCodeConfigName: z.string().optional(),
   useWorktree: z.boolean().optional(),
+  credentialName: z.string().optional(),
 }).refine(
   (data) => data.repoUrl || data.localPath,
   {

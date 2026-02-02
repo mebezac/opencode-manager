@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Loader2 } from 'lucide-react'
+import { useSettings } from '@/hooks/useSettings'
 
 interface AddRepoDialogProps {
   open: boolean
@@ -16,14 +17,17 @@ export function AddRepoDialog({ open, onOpenChange }: AddRepoDialogProps) {
   const [repoUrl, setRepoUrl] = useState('')
   const [localPath, setLocalPath] = useState('')
   const [branch, setBranch] = useState('')
+  const [credentialName, setCredentialName] = useState('')
   const queryClient = useQueryClient()
+  const { preferences } = useSettings()
+  const gitCredentials = preferences?.gitCredentials || []
 
   const mutation = useMutation({
     mutationFn: () => {
       if (repoType === 'local') {
         return createRepo(undefined, localPath, branch || undefined, undefined, false)
       } else {
-        return createRepo(repoUrl, undefined, branch || undefined, undefined, false)
+        return createRepo(repoUrl, undefined, branch || undefined, undefined, false, credentialName || undefined)
       }
     },
     onSuccess: () => {
@@ -31,6 +35,7 @@ export function AddRepoDialog({ open, onOpenChange }: AddRepoDialogProps) {
       setRepoUrl('')
       setLocalPath('')
       setBranch('')
+      setCredentialName('')
       setRepoType('remote')
       onOpenChange(false)
     },
@@ -61,7 +66,10 @@ export function AddRepoDialog({ open, onOpenChange }: AddRepoDialogProps) {
                   name="repoType"
                   value="remote"
                   checked={repoType === 'remote'}
-                  onChange={(e) => setRepoType(e.target.value as 'remote')}
+                  onChange={(e) => {
+                    setRepoType(e.target.value as 'remote')
+                    setCredentialName('')
+                  }}
                   disabled={mutation.isPending}
                   className="text-blue-600 bg-[#1a1a1a] border-[#2a2a2a]"
                 />
@@ -73,7 +81,10 @@ export function AddRepoDialog({ open, onOpenChange }: AddRepoDialogProps) {
                   name="repoType"
                   value="local"
                   checked={repoType === 'local'}
-                  onChange={(e) => setRepoType(e.target.value as 'local')}
+                  onChange={(e) => {
+                    setRepoType(e.target.value as 'local')
+                    setCredentialName('')
+                  }}
                   disabled={mutation.isPending}
                   className="text-blue-600 bg-[#1a1a1a] border-[#2a2a2a]"
                 />
@@ -83,19 +94,42 @@ export function AddRepoDialog({ open, onOpenChange }: AddRepoDialogProps) {
           </div>
 
           {repoType === 'remote' ? (
-            <div className="space-y-2">
-              <label className="text-sm text-zinc-400">Repository URL</label>
-              <Input
-                placeholder="owner/repo or https://github.com/user/repo.git"
-                value={repoUrl}
-                onChange={(e) => setRepoUrl(e.target.value)}
-                disabled={mutation.isPending}
-                className="bg-[#1a1a1a] border-[#2a2a2a] text-white placeholder:text-zinc-500"
-              />
-              <p className="text-xs text-zinc-500">
-                Full URL or shorthand format (owner/repo for GitHub)
-              </p>
-            </div>
+            <>
+              <div className="space-y-2">
+                <label className="text-sm text-zinc-400">Repository URL</label>
+                <Input
+                  placeholder="owner/repo or https://github.com/user/repo.git"
+                  value={repoUrl}
+                  onChange={(e) => setRepoUrl(e.target.value)}
+                  disabled={mutation.isPending}
+                  className="bg-[#1a1a1a] border-[#2a2a2a] text-white placeholder:text-zinc-500"
+                />
+                <p className="text-xs text-zinc-500">
+                  Full URL or shorthand format (owner/repo for GitHub)
+                </p>
+              </div>
+              {gitCredentials.length > 0 && (
+                <div className="space-y-2">
+                  <label className="text-sm text-zinc-400">Git Credential</label>
+                  <select
+                    value={credentialName}
+                    onChange={(e) => setCredentialName(e.target.value)}
+                    disabled={mutation.isPending}
+                    className="w-full bg-[#1a1a1a] border border-[#2a2a2a] text-white rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
+                  >
+                    <option value="">Auto-detect</option>
+                    {gitCredentials.map((cred) => (
+                      <option key={cred.name} value={cred.name}>
+                        {cred.name} ({cred.host})
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-zinc-500">
+                    Select a specific credential or auto-detect based on repository URL
+                  </p>
+                </div>
+              )}
+            </>
           ) : (
             <div className="space-y-2">
               <label className="text-sm text-zinc-400">Local Path</label>
@@ -111,7 +145,7 @@ export function AddRepoDialog({ open, onOpenChange }: AddRepoDialogProps) {
               </p>
             </div>
           )}
-          
+
           <div className="space-y-2">
             <label className="text-sm text-zinc-400">Branch</label>
             <Input
