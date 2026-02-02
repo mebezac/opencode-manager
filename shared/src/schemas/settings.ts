@@ -132,6 +132,7 @@ export const OpenCodeConfigSchema = z.object({
   instructions: z.array(z.string()).optional(),
   disabled_providers: z.array(z.string()).optional(),
   share: z.enum(["manual", "auto", "disabled"]).optional(),
+  plugin: z.array(z.string()).optional(),
 });
 
 export type OpenCodeConfigContent = z.infer<typeof OpenCodeConfigSchema>;
