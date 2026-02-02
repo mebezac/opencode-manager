@@ -14,15 +14,14 @@ export async function getGitRemotes(repoPath: string): Promise<GitRemoteInfo[]> 
     const lines = output.trim().split('\n').filter(line => line.trim())
     
     return lines.map(line => {
-      const [name, rest] = line.split(/\s+/)
-      const urlMatch = rest.match(/(.+?)\s+\((fetch|push)\)/)
-      if (!urlMatch) {
+      const match = line.match(/^(.*?)\s+(\S+)\s+\((fetch|push)\)$/)
+      if (!match) {
         throw new Error(`Invalid git remote format: ${line}`)
       }
       return {
-        name,
-        url: urlMatch[1],
-        type: urlMatch[2] as 'fetch' | 'push'
+        name: match[1],
+        url: match[2],
+        type: match[3] as 'fetch' | 'push'
       }
     })
   } catch (error) {
