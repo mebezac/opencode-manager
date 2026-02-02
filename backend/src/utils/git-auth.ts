@@ -41,30 +41,32 @@ export function normalizeHost(host: string): string {
 export function createGitEnv(credentials: GitCredential[]): Record<string, string> {
   const env: Record<string, string> = {
     GIT_TERMINAL_PROMPT: '0',
-    GIT_CONFIG_COUNT: '0'
   }
 
   if (!credentials || credentials.length === 0) {
     return env
   }
 
-  let configIndex = 0
-
-  for (const cred of credentials) {
-    if (!cred.host || !cred.token) {
-      continue
+  const githubCreds = credentials.filter(cred => {
+    if (!cred.host || !cred.token) return false
+    try {
+      const parsed = new URL(cred.host)
+      return parsed.hostname.toLowerCase() === 'github.com'
+    } catch {
+      return false
     }
+  })
 
+  if (githubCreds.length === 1) {
+    const cred = githubCreds[0]
     const host = normalizeHost(cred.host)
     const username = cred.username || getDefaultUsername(host)
     const basicAuth = Buffer.from(`${username}:${cred.token}`, 'utf8').toString('base64')
 
-    env[`GIT_CONFIG_KEY_${configIndex}`] = `http.${host}.extraheader`
-    env[`GIT_CONFIG_VALUE_${configIndex}`] = `AUTHORIZATION: basic ${basicAuth}`
-    configIndex++
+    env.GIT_CONFIG_COUNT = '1'
+    env.GIT_CONFIG_KEY_0 = `http.${host}.extraheader`
+    env.GIT_CONFIG_VALUE_0 = `AUTHORIZATION: basic ${basicAuth}`
   }
-
-  env.GIT_CONFIG_COUNT = String(configIndex)
 
   return env
 }
