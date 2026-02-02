@@ -7,6 +7,7 @@ import { FileBrowserSheet } from "@/components/file-browser/FileBrowserSheet";
 import { Header } from "@/components/ui/header";
 import { SwitchConfigDialog } from "@/components/repo/SwitchConfigDialog";
 import { RepoMcpDialog } from "@/components/repo/RepoMcpDialog";
+import { ChangeCredentialDialog } from "@/components/repo/ChangeCredentialDialog";
 import { SourceControlPanel } from "@/components/source-control";
 import { useCreateSession } from "@/hooks/useOpenCode";
 import { useSSE } from "@/hooks/useSSE";
@@ -23,7 +24,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Plug, FolderOpen, Plus, GitBranch, Loader2, GitCommitHorizontal, ShieldOff } from "lucide-react";
+import { Plug, FolderOpen, Plus, GitBranch, Loader2, GitCommitHorizontal, ShieldOff, Key } from "lucide-react";
 import { PendingActionsGroup } from "@/components/notifications/PendingActionsGroup";
 import { showToast } from "@/lib/toast";
 
@@ -37,6 +38,7 @@ export function RepoDetail() {
   const [mcpDialogOpen, setMcpDialogOpen] = useState(false);
   const [sourceControlOpen, setSourceControlOpen] = useState(false);
   const [resetPermissionsOpen, setResetPermissionsOpen] = useState(false);
+  const [changeCredentialOpen, setChangeCredentialOpen] = useState(false);
   const pageRef = useRef<HTMLDivElement>(null);
   
   const handleSwipeBack = useCallback(() => {
@@ -189,6 +191,15 @@ export function RepoDetail() {
         </Button>
         <Button
           variant="outline"
+          onClick={() => setChangeCredentialOpen(true)}
+          size="sm"
+          className="hidden lg:flex text-foreground border-border hover:bg-accent transition-all duration-200 hover:scale-105"
+        >
+          <Key className="w-4 h-4 sm:mr-2" />
+          <span className="hidden sm:inline">Credential</span>
+        </Button>
+        <Button
+          variant="outline"
           onClick={() => setResetPermissionsOpen(true)}
           size="sm"
           className="hidden lg:flex text-foreground border-border hover:bg-accent transition-all duration-200 hover:scale-105"
@@ -205,6 +216,9 @@ export function RepoDetail() {
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setFileBrowserOpen(true)}>
             <FolderOpen className="w-4 h-4 mr-2" /> Files
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setChangeCredentialOpen(true)}>
+            <Key className="w-4 h-4 mr-2" /> Change Credential
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setResetPermissionsOpen(true)}>
             <ShieldOff className="w-4 h-4 mr-2" /> Reset Permissions
@@ -268,6 +282,13 @@ export function RepoDetail() {
             }}
           />
         )}
+
+      <ChangeCredentialDialog
+        open={changeCredentialOpen}
+        onOpenChange={setChangeCredentialOpen}
+        repoId={repoId}
+        currentCredentialName={repo.gitCredentialName}
+      />
 
       <Dialog open={resetPermissionsOpen} onOpenChange={setResetPermissionsOpen}>
         <DialogContent>

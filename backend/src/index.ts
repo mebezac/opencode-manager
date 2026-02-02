@@ -665,6 +665,11 @@ app.all('/api/opencode/*', async (c) => {
 const isProduction = ENV.SERVER.NODE_ENV === 'production'
 
 if (isProduction) {
+  app.use('/assets/*', async (c, next) => {
+    await next()
+    c.header('Cache-Control', 'public, max-age=31536000, immutable')
+  })
+  
   app.use('/*', serveStatic({ root: './frontend/dist' }))
   
   app.get('*', async (c) => {
@@ -675,6 +680,9 @@ if (isProduction) {
     const path = await import('path')
     const indexPath = path.join(process.cwd(), 'frontend/dist/index.html')
     const html = await fs.readFile(indexPath, 'utf-8')
+    c.header('Cache-Control', 'no-cache, no-store, must-revalidate')
+    c.header('Pragma', 'no-cache')
+    c.header('Expires', '0')
     return c.html(html)
   })
 } else {

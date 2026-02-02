@@ -7,6 +7,7 @@ import { useVersion } from '@/hooks/useVersion'
 
 export function Settings() {
   const { data: versionInfo, isLoading, isError, error } = useVersion()
+  const buildVersion = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.0.0'
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-background">
@@ -52,13 +53,18 @@ export function Settings() {
         <div className="mt-8 text-center text-xs text-muted-foreground">
           {isLoading && <p>Loading version information...</p>}
           {isError && (
-            <p className="text-destructive">
-              Failed to load version: {error?.message || 'Unknown error'}
-            </p>
+            <div>
+              <p className="text-muted-foreground mb-1">
+                OpenCode Manager v{buildVersion} (build)
+              </p>
+              <p className="text-destructive text-xs">
+                Failed to load runtime version: {error?.message || 'Unknown error'}
+              </p>
+            </div>
           )}
           {versionInfo && !isLoading && (
             <p>
-              OpenCode Manager v{versionInfo.version}
+              OpenCode Manager v{versionInfo.version || buildVersion}
               {versionInfo.opencodeVersion && (
                 <span className="ml-2">
                   • OpenCode v{versionInfo.opencodeVersion}

@@ -11,6 +11,8 @@ export interface Repo {
   lastPulled?: number
   openCodeConfigName?: string
   isWorktree?: boolean
+  isLocal?: boolean
+  gitCredentialName?: string | null
 }
 
 import type { components } from './opencode-types'

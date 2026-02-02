@@ -3,13 +3,21 @@ import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from "vite-plugin-pwa";
+import fs from "fs";
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, path.resolve(__dirname, ".."), "");
   const backendPort = env.PORT || 5001;
 
+  const packageJsonPath = path.resolve(__dirname, "../package.json");
+  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf-8"));
+  const appVersion = packageJson.version || "unknown";
+
   return {
     envDir: path.resolve(__dirname, ".."),
+    define: {
+      __APP_VERSION__: JSON.stringify(appVersion),
+    },
     plugins: [
       react(), 
       tailwindcss(),
@@ -63,11 +71,13 @@ export default defineConfig(({ mode }) => {
       assetsInlineLimit: 4096,
       rollupOptions: {
         output: {
+          entryFileNames: `assets/[name]-${appVersion}-[hash].js`,
+          chunkFileNames: `assets/[name]-${appVersion}-[hash].js`,
           assetFileNames: (assetInfo) => {
             if (assetInfo.name === "manifest.json") {
               return "manifest.json";
             }
-            return "assets/[name]-[hash][extname]";
+            return `assets/[name]-${appVersion}-[hash][extname]`;
           },
         },
       },
