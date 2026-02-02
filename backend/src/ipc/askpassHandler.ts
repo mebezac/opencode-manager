@@ -166,16 +166,27 @@ export class AskpassHandler implements IPCHandler {
     }
 
     if (hostname.toLowerCase() === 'github.com' && this.currentRepoUrl) {
-      logger.info(`Multiple GitHub credentials found, checking access to ${this.currentRepoUrl}`)
-      const credWithAccess = await this.findCredentialWithRepoAccess(matchingCreds, this.currentRepoUrl)
-      if (credWithAccess) {
-        logger.info(`Found credential with access to the repository`)
-        return {
-          username: credWithAccess.username || this.getDefaultUsername(credWithAccess.host),
-          password: credWithAccess.token,
+      const owner = this.extractOwnerFromUrl(this.currentRepoUrl)
+      if (owner) {
+        logger.info(`Looking for credential matching owner: ${owner}`)
+        const credForOwner = matchingCreds.find(cred => {
+          try {
+            const parsed = new URL(cred.host)
+            const credPath = parsed.pathname.split('/').filter(p => p)[0]
+            return credPath?.toLowerCase() === owner.toLowerCase()
+          } catch {
+            return cred.host.toLowerCase().includes(`/${owner.toLowerCase()}`)
+          }
+        })
+        if (credForOwner) {
+          logger.info(`Found credential for owner ${owner}: ${credForOwner.name}`)
+          return {
+            username: credForOwner.username || this.getDefaultUsername(credForOwner.host),
+            password: credForOwner.token,
+          }
         }
+        logger.warn(`No credential found matching owner ${owner}, falling back to first match`)
       }
-      logger.warn(`No credential found with access to ${this.currentRepoUrl}, falling back to first match`)
     }
 
     const firstCred = matchingCreds[0]
@@ -186,31 +197,30 @@ export class AskpassHandler implements IPCHandler {
     }
   }
 
-  private async findCredentialWithRepoAccess(credentials: GitCredential[], repoUrl: string): Promise<GitCredential | null> {
+  private extractOwnerFromUrl(url: string): string | null {
     try {
-      const repoPath = this.extractRepoPathFromUrl(repoUrl)
-      if (!repoPath) {
-        logger.warn(`Could not extract repo path from URL: ${repoUrl}`)
+      const parsed = new URL(url)
+      if (parsed.hostname.toLowerCase() !== 'github.com') {
         return null
       }
 
-      logger.info(`Checking access to repository: ${repoPath}`)
-
-      for (const cred of credentials) {
-        try {
-          const hasAccess = await this.checkGitHubRepoAccess(cred.token, repoPath)
-          if (hasAccess) {
-            logger.info(`Credential ${cred.name} has access to ${repoPath}`)
-            return cred
-          }
-        } catch (error) {
-          logger.warn(`Failed to check access for credential ${cred.name}:`, error)
-        }
+      const pathParts = parsed.pathname.split('/').filter(p => p)
+      if (pathParts.length >= 1) {
+        return pathParts[0]
       }
 
       return null
-    } catch (error) {
-      logger.error(`Error finding credential with repo access:`, error)
+    } catch {
+      const sshMatch = url.match(/^git@github\.com:([^/]+)/)
+      if (sshMatch) {
+        return sshMatch[1]
+      }
+
+      const shorthandMatch = url.match(/^([^/]+)\//)
+      if (shorthandMatch) {
+        return shorthandMatch[1]
+      }
+
       return null
     }
   }
@@ -240,33 +250,6 @@ export class AskpassHandler implements IPCHandler {
       }
 
       return null
-    }
-  }
-
-  private async checkGitHubRepoAccess(token: string, repoPath: string): Promise<boolean> {
-    try {
-      const response = await fetch(`https://api.github.com/repos/${repoPath}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/vnd.github+json',
-          'X-GitHub-Api-Version': '2022-11-28',
-          'User-Agent': 'OpenCode-Manager'
-        }
-      })
-
-      if (response.status === 200) {
-        return true
-      }
-
-      if (response.status === 404 || response.status === 403) {
-        return false
-      }
-
-      logger.warn(`Unexpected response status from GitHub API: ${response.status}`)
-      return false
-    } catch (error) {
-      logger.error(`Error checking GitHub repo access:`, error)
-      return false
     }
   }
 
