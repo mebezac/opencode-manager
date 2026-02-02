@@ -618,6 +618,15 @@ try {
   settingsService.initializeLastKnownGoodConfig()
 
   const userSettings = settingsService.getSettings('default')
+  
+  try {
+    const { GhHostsService } = await import('./services/gh-hosts')
+    const ghHostsService = new GhHostsService()
+    ghHostsService.syncCredentialsToHosts(userSettings.preferences.gitCredentials)
+    logger.info('Synced git credentials to gh hosts.yml on startup')
+  } catch (error) {
+    logger.error('Failed to sync git credentials to gh hosts.yml on startup:', error)
+  }
   if (userSettings.preferences.kubernetesConfig) {
     const { kubernetesService } = await import('./services/kubernetes')
     kubernetesService.updateConfig(userSettings.preferences.kubernetesConfig)

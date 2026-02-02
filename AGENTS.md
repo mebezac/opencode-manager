@@ -111,6 +111,12 @@ OpenCode Manager supports using multiple GitHub Personal Access Tokens (PATs) fo
 
 The system uses Git's `credential.useHttpPath` configuration to match credentials based on the full repository URL path, not just the hostname. This means you can configure separate PATs for different GitHub users or organizations.
 
+**Automatic synchronization:**
+- Git credentials are automatically synced to `~/.config/gh/hosts.yml` for GitHub CLI
+- Syncing happens on app startup and whenever credentials are updated
+- No manual configuration or redeployment required
+- Both git operations and gh CLI commands use the correct tokens automatically
+
 ### Configuration
 
 In Settings > Git Credentials, add multiple credentials with path-based hosts:
@@ -131,6 +137,7 @@ In Settings > Git Credentials, add multiple credentials with path-based hosts:
 - Repos under `https://github.com/your-username/*` → Uses Personal PAT
 - Repos under `https://github.com/your-company/*` → Uses Work PAT
 - Each repo automatically gets the correct credential based on its URL path
+- GitHub CLI (`gh`) commands respect the same credential mapping
 
 ### Per-repo credential selection
 

@@ -15,6 +15,7 @@ import {
   OpenCodeConfigSchema,
   DEFAULT_USER_PREFERENCES,
 } from '../types/settings'
+import { GhHostsService } from './gh-hosts'
 
 interface OpenCodeConfigWithRaw extends OpenCodeConfig {
   rawContent: string
@@ -31,8 +32,11 @@ function parseJsonc(content: string): unknown {
 
 export class SettingsService {
   private static lastKnownGoodConfigContent: string | null = null
+  private ghHostsService: GhHostsService
 
-  constructor(private db: Database) {}
+  constructor(private db: Database) {
+    this.ghHostsService = new GhHostsService()
+  }
 
   initializeLastKnownGoodConfig(userId: string = 'default'): void {
     const settings = this.getSettings(userId)
@@ -106,6 +110,15 @@ export class SettingsService {
       .run(userId, JSON.stringify(validated), updatedAt)
 
     logger.info(`Updated preferences for user: ${userId}`)
+
+    if (updates.gitCredentials !== undefined) {
+      try {
+        this.ghHostsService.syncCredentialsToHosts(validated.gitCredentials)
+        logger.info('Successfully synced git credentials to gh hosts.yml')
+      } catch (error) {
+        logger.error('Failed to sync git credentials to gh hosts.yml:', error)
+      }
+    }
 
     return {
       preferences: validated,
