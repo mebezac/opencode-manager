@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -64,15 +65,39 @@ export function CommandDialog({
   const form = useForm<CommandFormValues>({
     resolver: zodResolver(commandFormSchema),
     defaultValues: {
-      name: editingCommand?.name || "",
-      template: editingCommand?.command.template || "",
-      description: editingCommand?.command.description || "",
-      agent: editingCommand?.command.agent || "",
-      model: editingCommand?.command.model || "",
-      subtask: editingCommand?.command.subtask || false,
-      topP: editingCommand?.command.topP ?? 1,
+      name: "",
+      template: "",
+      description: "",
+      agent: "",
+      model: "",
+      subtask: false,
+      topP: 1,
     },
   });
+
+  useEffect(() => {
+    if (editingCommand) {
+      form.reset({
+        name: editingCommand.name,
+        template: editingCommand.command.template,
+        description: editingCommand.command.description || "",
+        agent: editingCommand.command.agent || "",
+        model: editingCommand.command.model || "",
+        subtask: editingCommand.command.subtask || false,
+        topP: editingCommand.command.topP ?? 1,
+      });
+    } else {
+      form.reset({
+        name: "",
+        template: "",
+        description: "",
+        agent: "",
+        model: "",
+        subtask: false,
+        topP: 1,
+      });
+    }
+  }, [editingCommand, form]);
 
   const handleSubmit = (values: CommandFormValues) => {
     const command: Command = {
