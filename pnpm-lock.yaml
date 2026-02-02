@@ -49,7 +49,7 @@ importers:
         specifier: ^4.1.0
         version: 4.1.0
       hono:
-        specifier: ^4.11.6
+        specifier: ^4.11.7
         version: 4.11.7
       js-yaml:
         specifier: ^4.1.1
