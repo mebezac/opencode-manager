@@ -137,9 +137,9 @@ docker-compose restart
 docker exec -it opencode-manager sh
 ```
 
-### Dev Servers (Kubernetes)
+### Dev Servers (Kubernetes MCP)
 
-Dev servers run inside Kubernetes pods and are exposed through Services and Ingresses. Do not rely on local port mappings for dev server access.
+Dev servers run inside Kubernetes pods via the Kubernetes MCP server and are exposed through Services and Ingresses. Do not rely on local port mappings for dev server access.
 
 ### Global Agent Instructions (AGENTS.md)
 
@@ -147,8 +147,8 @@ OpenCode Manager creates a default `AGENTS.md` file in the workspace config dire
 
 **Default instructions include:**
 - Reserved ports (5003 for OpenCode Manager, 5551 for OpenCode server)
-- Kubernetes-only execution (tests, dev servers, staging/preview)
-- Exposing dev servers via Kubernetes Services and Ingresses
+- Kubernetes MCP execution (tests, dev servers, staging/preview)
+- Exposing dev servers via Kubernetes Services and Ingresses via MCP
 
 **Editing AGENTS.md:**
 - Via UI: Settings > OpenCode > Global Agent Instructions
@@ -199,5 +199,4 @@ OpenCode WebUI supports OAuth authentication for select providers, offering a mo
    - **"Use Authorization Code"** - Provides code for manual entry
 5. **Complete authorization** in the browser or enter the provided code
 6. **Connection status** will show as "Configured" when successful
-
 

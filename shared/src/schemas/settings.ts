@@ -56,19 +56,6 @@ export const DEFAULT_GIT_IDENTITY: GitIdentity = {
   email: '',
 };
 
-export const KubernetesConfigSchema = z.object({
-  enabled: z.boolean(),
-  namespace: z.string().optional(),
-  kubeconfigPath: z.string().optional(),
-});
-
-export type KubernetesConfig = z.infer<typeof KubernetesConfigSchema>;
-
-export const DEFAULT_KUBERNETES_CONFIG: KubernetesConfig = {
-  enabled: false,
-  namespace: 'opencode-manager',
-};
-
 export const UserPreferencesSchema = z.object({
   theme: z.enum(["dark", "light", "system"]),
   mode: z.enum(["plan", "build"]),
@@ -85,7 +72,6 @@ export const UserPreferencesSchema = z.object({
   customAgents: z.array(CustomAgentSchema),
   gitCredentials: z.array(GitCredentialSchema).optional(),
   gitIdentity: GitIdentitySchema.optional(),
-  kubernetesConfig: KubernetesConfigSchema.optional(),
   lastKnownGoodConfig: z.string().optional(),
   repoOrder: z.array(z.number()).optional(),
 });
@@ -104,7 +90,6 @@ export const DEFAULT_USER_PREFERENCES = {
   customAgents: [],
   gitCredentials: [] as GitCredential[],
   gitIdentity: DEFAULT_GIT_IDENTITY,
-  kubernetesConfig: DEFAULT_KUBERNETES_CONFIG,
 };
 
 export const SettingsResponseSchema = z.object({

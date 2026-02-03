@@ -17,8 +17,6 @@
   },
   "dependencies": {
     "@hono/node-server": "^1.19.9",
-    "@kubernetes/client-node": "^1.4.0",
-    "@lydell/node-pty": "1.2.0-beta.3",
     "@opencode-manager/shared": "workspace:*",
     "archiver": "^7.0.1",
     "dotenv": "^17.2.3",

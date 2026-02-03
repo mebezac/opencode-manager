@@ -2,13 +2,11 @@ import {
   DEFAULT_KEYBOARD_SHORTCUTS,
   DEFAULT_USER_PREFERENCES,
   DEFAULT_LEADER_KEY,
-  DEFAULT_KUBERNETES_CONFIG,
-  type KubernetesConfig,
   type OpenCodeConfigContent,
 } from '@opencode-manager/shared'
 
-export type { KubernetesConfig, OpenCodeConfigContent }
-export { DEFAULT_KEYBOARD_SHORTCUTS, DEFAULT_USER_PREFERENCES, DEFAULT_LEADER_KEY, DEFAULT_KUBERNETES_CONFIG }
+export type { OpenCodeConfigContent }
+export { DEFAULT_KEYBOARD_SHORTCUTS, DEFAULT_USER_PREFERENCES, DEFAULT_LEADER_KEY }
 
 export interface CustomCommand {
   name: string
@@ -50,7 +48,6 @@ export interface UserPreferences {
   customAgents: CustomAgent[]
   gitCredentials?: GitCredential[]
   gitIdentity?: GitIdentity
-  kubernetesConfig?: KubernetesConfig
   repoOrder?: number[]
 }
 

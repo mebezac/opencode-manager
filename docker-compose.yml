@@ -23,12 +23,9 @@ services:
       - SANDBOX_TTL_HOURS=24
       - CLEANUP_INTERVAL_MINUTES=60
       - DEBUG=false
-      - NODE_EXTRA_CA_CERTS=/workspace/.kube/ca.crt
     volumes:
       - opencode-workspace:/workspace
       - opencode-data:/app/data
-      - ./kubeconfig:/workspace/.kube/kubeconfig
-      - ./ca.crt:/workspace/.kube/ca.crt
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5003/api/health"]
