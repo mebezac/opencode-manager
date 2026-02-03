@@ -95,14 +95,21 @@ export class KubernetesService {
       this.kc = new k8s.KubeConfig()
 
       const kubeconfigPath = this.config.kubeconfigPath || '/workspace/.kube/kubeconfig'
-      const exists = await fs.access(kubeconfigPath).then(() => true).catch(() => false)
-      if (!exists) {
-        throw new Error(`Kubeconfig file not found: ${kubeconfigPath}`)
-      }
-
-      this.kc.loadFromFile(kubeconfigPath)
+      const kubeconfigExists = await fs.access(kubeconfigPath).then(() => true).catch(() => false)
       
-      logger.info(`Loaded kubeconfig from: ${kubeconfigPath}`)
+      if (kubeconfigExists) {
+        this.kc.loadFromFile(kubeconfigPath)
+        logger.info(`Loaded kubeconfig from: ${kubeconfigPath}`)
+      } else {
+        try {
+          this.kc.loadFromCluster()
+          logger.info('Loaded in-cluster Kubernetes configuration')
+        } catch {
+          this.config.enabled = false
+          logger.info(`Kubernetes not configured: No kubeconfig found at ${kubeconfigPath} and not running in-cluster. Kubernetes features will be disabled.`)
+          return
+        }
+      }
 
       this.coreV1Api = this.kc.makeApiClient(k8s.CoreV1Api)
       
@@ -110,8 +117,7 @@ export class KubernetesService {
       logger.info('Kubernetes client initialized successfully')
     } catch (error) {
       this.config.enabled = false
-      logger.error('Failed to initialize Kubernetes client:', error)
-      throw error
+      logger.warn('Kubernetes initialization failed, features will be disabled:', error)
     }
   }
 
