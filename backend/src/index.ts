@@ -63,63 +63,18 @@ export const DEFAULT_AGENTS_MD = `# OpenCode Manager - Global Agent Instructions
 - **DO NOT** kill or stop processes on ports 5003 or 5551
 - **DO NOT** modify files in the \`.config/opencode\` directory unless explicitly requested
 
-## Choosing the Right Tool: Kubernetes vs mise
+## Kubernetes-Only Execution
 
-### Use Kubernetes when:
-- You need isolated testing environments that don't pollute the workspace
-- Running integration tests with specific dependencies (databases, message queues, etc.)
-- Testing deployment configurations
-- The task requires a clean environment without existing workspace state
+- All tests, builds, package installs, dev servers, and staging/preview environments must run in Kubernetes pods
+- Do not run commands locally or install tools locally, except when the user explicitly asks to install MCP servers (typically via npm/npx)
+- If Kubernetes is not enabled, stop and request that it be enabled before proceeding
 
 **Prerequisites:** Kubernetes must be enabled in Settings > Kubernetes
 
-### Use mise when:
-- Kubernetes is disabled or unavailable
-- You need a quick local tool installation (fast, easy tasks)
-- The task benefits from the existing workspace state and files
-- You're doing development work that doesn't require isolation
+### Dev Server Exposure
 
-### Dev Server Ports
-
-When starting dev servers, use the pre-allocated ports 5100-5103:
-- Port 5100: Primary dev server (frontend)
-- Port 5101: Secondary dev server (API/backend)
-- Port 5102: Additional service
-- Port 5103: Additional service
-
-Always bind to \`0.0.0.0\` to allow external access from the Docker host.
-
-## Tool Version Management with mise
-
-**mise** is pre-installed and configured in the container for managing multiple runtime versions:
-
-### Quick Start
-\`\`\`bash
-# Install a specific tool version
-mise use node@20
-mise use python@3.12
-mise use ruby@3.2
-
-# Install tools from .mise.toml or .tool-versions file
-mise install
-
-# List available tools
-mise ls-remote node
-mise ls-remote python
-
-# Execute command with specific tool version
-mise exec node@18 -- node script.js
-
-# Show current environment
-mise current
-\`\`\`
-
-### Key Features
-- Pre-configured and available in PATH
-- Automatically activated in shell sessions
-- Install any version of Node.js, Python, Ruby, Go, and 100+ other tools
-- Respects .tool-versions and .mise.toml files in repositories
-- Zero configuration required - just use \`mise use\` or \`mise install\`
+- Expose dev servers with Kubernetes Services and Ingresses
+- Bind to \`0.0.0.0\` inside the pod so Services can route traffic
 
 ## GitHub CLI
 
@@ -161,14 +116,101 @@ gh repo view
 
 ## Kubernetes Integration
 
-**Kubernetes** pod management is available for creating isolated testing environments.
+**Kubernetes** is required for all execution and provides pod management for isolated testing environments.
 
 ### Prerequisites
 Before using Kubernetes:
 1. Check Settings > Kubernetes to verify the integration is **enabled**
 2. Ensure the namespace is configured (default: \`opencode-manager\`)
 3. Test the connection to verify cluster access
-4. If disabled, use mise for local tool management instead
+4. If disabled, do not run anything locally; Kubernetes is required for execution
+
+### Authentication Methods
+
+OpenCode Manager supports two methods for Kubernetes authentication:
+
+#### Method 1: In-Cluster Authentication (Recommended)
+
+When running OpenCode Manager inside a Kubernetes cluster, it automatically uses the pod's ServiceAccount for authentication. No kubeconfig file is required.
+
+**Setup:**
+
+1. Create a ServiceAccount for OpenCode Manager:
+\`\`\`yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: opencode-manager
+  namespace: opencode-manager
+\`\`\`
+
+2. Create a Role with necessary permissions:
+\`\`\`yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: opencode-manager-role
+  namespace: opencode-manager
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: [""]
+  resources: ["pods/exec"]
+  verbs: ["create"]
+- apiGroups: [""]
+  resources: ["pods/log"]
+  verbs: ["get", "list"]
+- apiGroups: [""]
+  resources: ["services"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["networking.k8s.io"]
+  resources: ["ingresses"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+\`\`\`
+
+3. Bind the Role to the ServiceAccount:
+\`\`\`yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: opencode-manager-rolebinding
+  namespace: opencode-manager
+subjects:
+- kind: ServiceAccount
+  name: opencode-manager
+  namespace: opencode-manager
+roleRef:
+  kind: Role
+  name: opencode-manager-role
+  apiGroup: rbac.authorization.k8s.io
+\`\`\`
+
+4. Assign the ServiceAccount to the OpenCode Manager pod in your deployment:
+\`\`\`yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opencode-manager
+  namespace: opencode-manager
+spec:
+  template:
+    spec:
+      serviceAccountName: opencode-manager
+      containers:
+      - name: opencode-manager
+        image: opencode-manager:latest
+\`\`\`
+
+**Benefits:**
+- No kubeconfig file management required
+- Automatic credential rotation
+- Follows Kubernetes security best practices
+- Works seamlessly with kubectl commands inside the pod
+
+#### Method 2: Kubeconfig File
+
+For external cluster access, provide a kubeconfig file path in Settings > Kubernetes. The kubeconfig will be loaded from the specified path (default: \`/workspace/.kube/kubeconfig\`).
 
 ### When to Use Kubernetes
 - Testing code in isolated, clean environments
@@ -182,8 +224,8 @@ Before using Kubernetes:
 
 When creating pods, always match the container image to the project's specified versions:
 
-**Check these files for version requirements:**
-- \`mise.toml\` or \`.tool-versions\` - mise version manager
+**Check these files for version requirements (read-only hints from the repo):**
+- \`mise.toml\` or \`.tool-versions\` - version manager hints from upstream repo
 - \`package.json\` (\`engines.node\`) - Node.js version
 - \`.nvmrc\` or \`.node-version\` - Node.js version
 - \`.python-version\` - Python version
@@ -500,7 +542,7 @@ The preview is now accessible at the configured hostname.
 - This file is merged with any AGENTS.md files in individual repositories
 - Repository-specific instructions take precedence for their respective codebases
 - Always check if Kubernetes is enabled before suggesting isolated environments
-- Prefer mise for simple local tasks when Kubernetes isn't needed or is disabled
+- Keep all execution inside Kubernetes pods; do not run tasks locally
 `
 
 async function ensureDefaultConfigExists(): Promise<void> {
