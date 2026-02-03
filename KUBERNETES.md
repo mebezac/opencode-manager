@@ -340,8 +340,11 @@ When creating pods for testing or staging, ensure the container image matches th
 
 **Check these files for version requirements:**
 
+These files are read-only hints from the repository; do not run local tooling to resolve versions.
+
 | File | Purpose | Example Values |
 |------|---------|----------------|
+| `mise.toml` or `.tool-versions` | version hints from upstream repo | `node 20.11.0`, `python 3.12.0` |
 | `package.json` (`engines.node`) | Node.js version | `"node": ">=20.0.0"` |
 | `.nvmrc` or `.node-version` | Node.js version manager | `20.11.0` |
 | `.python-version` | Python version | `3.12.0` |

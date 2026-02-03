@@ -71,15 +71,10 @@ export const DEFAULT_AGENTS_MD = `# OpenCode Manager - Global Agent Instructions
 
 **Prerequisites:** Kubernetes must be enabled in Settings > Kubernetes
 
-### Dev Server Ports
+### Dev Server Exposure
 
-When starting dev servers, use the pre-allocated ports 5100-5103:
-- Port 5100: Primary dev server (frontend)
-- Port 5101: Secondary dev server (API/backend)
-- Port 5102: Additional service
-- Port 5103: Additional service
-
-Always bind to \`0.0.0.0\` to allow external access from the Docker host.
+- Expose dev servers with Kubernetes Services and Ingresses
+- Bind to \`0.0.0.0\` inside the pod so Services can route traffic
 
 ## GitHub CLI
 
@@ -229,7 +224,8 @@ For external cluster access, provide a kubeconfig file path in Settings > Kubern
 
 When creating pods, always match the container image to the project's specified versions:
 
-**Check these files for version requirements:**
+**Check these files for version requirements (read-only hints from the repo):**
+- \`mise.toml\` or \`.tool-versions\` - version manager hints from upstream repo
 - \`package.json\` (\`engines.node\`) - Node.js version
 - \`.nvmrc\` or \`.node-version\` - Node.js version
 - \`.python-version\` - Python version
