@@ -170,6 +170,93 @@ Before using Kubernetes:
 3. Test the connection to verify cluster access
 4. If disabled, use mise for local tool management instead
 
+### Authentication Methods
+
+OpenCode Manager supports two methods for Kubernetes authentication:
+
+#### Method 1: In-Cluster Authentication (Recommended)
+
+When running OpenCode Manager inside a Kubernetes cluster, it automatically uses the pod's ServiceAccount for authentication. No kubeconfig file is required.
+
+**Setup:**
+
+1. Create a ServiceAccount for OpenCode Manager:
+\`\`\`yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: opencode-manager
+  namespace: opencode-manager
+\`\`\`
+
+2. Create a Role with necessary permissions:
+\`\`\`yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: opencode-manager-role
+  namespace: opencode-manager
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: [""]
+  resources: ["pods/exec"]
+  verbs: ["create"]
+- apiGroups: [""]
+  resources: ["pods/log"]
+  verbs: ["get", "list"]
+- apiGroups: [""]
+  resources: ["services"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["networking.k8s.io"]
+  resources: ["ingresses"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+\`\`\`
+
+3. Bind the Role to the ServiceAccount:
+\`\`\`yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: opencode-manager-rolebinding
+  namespace: opencode-manager
+subjects:
+- kind: ServiceAccount
+  name: opencode-manager
+  namespace: opencode-manager
+roleRef:
+  kind: Role
+  name: opencode-manager-role
+  apiGroup: rbac.authorization.k8s.io
+\`\`\`
+
+4. Assign the ServiceAccount to the OpenCode Manager pod in your deployment:
+\`\`\`yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opencode-manager
+  namespace: opencode-manager
+spec:
+  template:
+    spec:
+      serviceAccountName: opencode-manager
+      containers:
+      - name: opencode-manager
+        image: opencode-manager:latest
+\`\`\`
+
+**Benefits:**
+- No kubeconfig file management required
+- Automatic credential rotation
+- Follows Kubernetes security best practices
+- Works seamlessly with kubectl commands inside the pod
+
+#### Method 2: Kubeconfig File
+
+For external cluster access, provide a kubeconfig file path in Settings > Kubernetes. The kubeconfig will be loaded from the specified path (default: \`/workspace/.kube/kubeconfig\`).
+
 ### When to Use Kubernetes
 - Testing code in isolated, clean environments
 - Running integration tests that need specific dependencies
