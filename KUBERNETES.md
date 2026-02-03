@@ -1,6 +1,6 @@
 # Kubernetes Integration
 
-OpenCode Manager supports Kubernetes integration for creating isolated testing environments in pods.
+OpenCode Manager is Kubernetes-native. All tests, dev servers, staging/preview environments, and package installs run in Kubernetes pods. Nothing should be executed locally, except when the user explicitly requests installing MCP servers (typically via npm/npx).
 
 ## Overview
 
@@ -342,7 +342,6 @@ When creating pods for testing or staging, ensure the container image matches th
 
 | File | Purpose | Example Values |
 |------|---------|----------------|
-| `mise.toml` or `.tool-versions` | mise version manager | `node 20.11.0`, `python 3.12.0` |
 | `package.json` (`engines.node`) | Node.js version | `"node": ">=20.0.0"` |
 | `.nvmrc` or `.node-version` | Node.js version manager | `20.11.0` |
 | `.python-version` | Python version | `3.12.0` |
@@ -357,11 +356,10 @@ Always specify exact versions in pod image tags rather than using `latest` or ma
 - ✅ Use: `node:20.11.0-alpine`
 - ❌ Avoid: `node:latest` or `node:20`
 
-**Example - Checking mise.toml:**
+**Example - Checking package.json engines:**
 ```bash
-# If mise.toml contains:
-# [tools]
-# node = "20.11.0"
+# If package.json contains:
+# "engines": { "node": "20.11.0" }
 
 # Use this image:
 POST /api/kubernetes/pods

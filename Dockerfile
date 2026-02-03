@@ -44,11 +44,6 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 RUN corepack enable && corepack prepare pnpm@10.28.2 --activate
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
-ENV MISE_INSTALL_PATH="/usr/local/bin/mise"
-
-RUN curl https://mise.run | sh && \
-    echo 'eval "$(mise activate bash)"' >> /etc/bash.bashrc && \
-    mise --version
 
 ARG BUN_VARIANT=""
 RUN ARCH=$(dpkg --print-architecture) && \
@@ -128,10 +123,6 @@ ENV PORT=5003
 ENV OPENCODE_SERVER_PORT=5551
 ENV DATABASE_PATH=/app/data/opencode.db
 ENV WORKSPACE_PATH=/workspace
-ENV MISE_DATA_DIR=/workspace/mise
-ENV MISE_CONFIG_DIR=/workspace/mise/config
-ENV MISE_CACHE_DIR=/workspace/mise/cache
-ENV PATH="/workspace/mise/shims:$PATH"
 
 COPY --from=deps --chown=node:node /app/node_modules ./node_modules
 COPY --from=builder /app/shared ./shared
@@ -144,7 +135,7 @@ COPY package.json pnpm-workspace.yaml ./
 COPY scripts/docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
 
-RUN mkdir -p /workspace /app/data /workspace/mise /workspace/mise/config /workspace/mise/cache /workspace/mise/shims && \
+RUN mkdir -p /workspace /app/data && \
     chown -R node:node /workspace /app/data
 
 EXPOSE 5003 5100 5101 5102 5103
@@ -156,4 +147,3 @@ USER node
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
 CMD ["bun", "backend/src/index.ts"]
-

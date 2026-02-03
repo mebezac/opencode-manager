@@ -63,21 +63,13 @@ export const DEFAULT_AGENTS_MD = `# OpenCode Manager - Global Agent Instructions
 - **DO NOT** kill or stop processes on ports 5003 or 5551
 - **DO NOT** modify files in the \`.config/opencode\` directory unless explicitly requested
 
-## Choosing the Right Tool: Kubernetes vs mise
+## Kubernetes-Only Execution
 
-### Use Kubernetes when:
-- You need isolated testing environments that don't pollute the workspace
-- Running integration tests with specific dependencies (databases, message queues, etc.)
-- Testing deployment configurations
-- The task requires a clean environment without existing workspace state
+- All tests, builds, package installs, dev servers, and staging/preview environments must run in Kubernetes pods
+- Do not run commands locally or install tools locally, except when the user explicitly asks to install MCP servers (typically via npm/npx)
+- If Kubernetes is not enabled, stop and request that it be enabled before proceeding
 
 **Prerequisites:** Kubernetes must be enabled in Settings > Kubernetes
-
-### Use mise when:
-- Kubernetes is disabled or unavailable
-- You need a quick local tool installation (fast, easy tasks)
-- The task benefits from the existing workspace state and files
-- You're doing development work that doesn't require isolation
 
 ### Dev Server Ports
 
@@ -88,38 +80,6 @@ When starting dev servers, use the pre-allocated ports 5100-5103:
 - Port 5103: Additional service
 
 Always bind to \`0.0.0.0\` to allow external access from the Docker host.
-
-## Tool Version Management with mise
-
-**mise** is pre-installed and configured in the container for managing multiple runtime versions:
-
-### Quick Start
-\`\`\`bash
-# Install a specific tool version
-mise use node@20
-mise use python@3.12
-mise use ruby@3.2
-
-# Install tools from .mise.toml or .tool-versions file
-mise install
-
-# List available tools
-mise ls-remote node
-mise ls-remote python
-
-# Execute command with specific tool version
-mise exec node@18 -- node script.js
-
-# Show current environment
-mise current
-\`\`\`
-
-### Key Features
-- Pre-configured and available in PATH
-- Automatically activated in shell sessions
-- Install any version of Node.js, Python, Ruby, Go, and 100+ other tools
-- Respects .tool-versions and .mise.toml files in repositories
-- Zero configuration required - just use \`mise use\` or \`mise install\`
 
 ## GitHub CLI
 
@@ -161,14 +121,14 @@ gh repo view
 
 ## Kubernetes Integration
 
-**Kubernetes** pod management is available for creating isolated testing environments.
+**Kubernetes** is required for all execution and provides pod management for isolated testing environments.
 
 ### Prerequisites
 Before using Kubernetes:
 1. Check Settings > Kubernetes to verify the integration is **enabled**
 2. Ensure the namespace is configured (default: \`opencode-manager\`)
 3. Test the connection to verify cluster access
-4. If disabled, use mise for local tool management instead
+4. If disabled, do not run anything locally; Kubernetes is required for execution
 
 ### Authentication Methods
 
@@ -270,7 +230,6 @@ For external cluster access, provide a kubeconfig file path in Settings > Kubern
 When creating pods, always match the container image to the project's specified versions:
 
 **Check these files for version requirements:**
-- \`mise.toml\` or \`.tool-versions\` - mise version manager
 - \`package.json\` (\`engines.node\`) - Node.js version
 - \`.nvmrc\` or \`.node-version\` - Node.js version
 - \`.python-version\` - Python version
@@ -587,7 +546,7 @@ The preview is now accessible at the configured hostname.
 - This file is merged with any AGENTS.md files in individual repositories
 - Repository-specific instructions take precedence for their respective codebases
 - Always check if Kubernetes is enabled before suggesting isolated environments
-- Prefer mise for simple local tasks when Kubernetes isn't needed or is disabled
+- Keep all execution inside Kubernetes pods; do not run tasks locally
 `
 
 async function ensureDefaultConfigExists(): Promise<void> {
