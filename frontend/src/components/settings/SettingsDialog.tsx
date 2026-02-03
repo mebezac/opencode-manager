@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Settings2, Keyboard, Code, ChevronLeft, X, Key, GitBranch, Container } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useSwipeBack } from '@/hooks/useMobile'
+import { useVersion } from '@/hooks/useVersion'
 
 interface SettingsDialogProps {
   open: boolean
@@ -21,6 +22,8 @@ type SettingsView = 'menu' | 'general' | 'git' | 'shortcuts' | 'opencode' | 'pro
 export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const [mobileView, setMobileView] = useState<SettingsView>('menu')
   const contentRef = useRef<HTMLDivElement>(null)
+  const { data: versionInfo, isLoading, isError, error } = useVersion()
+  const buildVersion = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'unknown'
 
   const handleSwipeBack = useCallback(() => {
     if (mobileView === 'menu') {
@@ -102,6 +105,29 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
               </div>
             </div>
           </Tabs>
+          <div className="border-t border-border px-6 py-3 text-center text-xs text-muted-foreground">
+            {isLoading && <p>Loading version information...</p>}
+            {isError && (
+              <div>
+                <p className="text-muted-foreground mb-1">
+                  OpenCode Manager v{buildVersion} (build)
+                </p>
+                <p className="text-destructive text-xs">
+                  Failed to load runtime version: {error?.message || 'Unknown error'}
+                </p>
+              </div>
+            )}
+            {versionInfo && !isLoading && (
+              <p>
+                OpenCode Manager v{versionInfo.version || buildVersion}
+                {versionInfo.opencodeVersion && (
+                  <span className="ml-2">
+                    • OpenCode v{versionInfo.opencodeVersion}
+                  </span>
+                )}
+              </p>
+            )}
+          </div>
         </div>
 
         <div className="sm:hidden flex flex-col h-full min-h-0 pt-safe">
@@ -160,6 +186,29 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
             {mobileView === 'opencode' && <OpenCodeConfigManager />}
             {mobileView === 'providers' && <ProviderSettings />}
             {mobileView === 'kubernetes' && <KubernetesSettings />}
+          </div>
+          <div className="border-t border-border px-4 py-3 text-center text-xs text-muted-foreground">
+            {isLoading && <p>Loading version information...</p>}
+            {isError && (
+              <div>
+                <p className="text-muted-foreground mb-1">
+                  OpenCode Manager v{buildVersion} (build)
+                </p>
+                <p className="text-destructive text-xs">
+                  Failed to load runtime version: {error?.message || 'Unknown error'}
+                </p>
+              </div>
+            )}
+            {versionInfo && !isLoading && (
+              <p>
+                OpenCode Manager v{versionInfo.version || buildVersion}
+                {versionInfo.opencodeVersion && (
+                  <span className="ml-2">
+                    • OpenCode v{versionInfo.opencodeVersion}
+                  </span>
+                )}
+              </p>
+            )}
           </div>
         </div>
       </DialogContent>
