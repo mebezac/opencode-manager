@@ -182,12 +182,20 @@ const createOptimisticUserMessage = (
         messageID: optimisticID,
         sessionID,
       };
-    } else {
+    } else if (part.type === "file") {
       return {
         id: `${optimisticID}_part_${index}`,
         type: "file" as const,
         filename: part.name,
         url: part.path,
+        messageID: optimisticID,
+        sessionID,
+      };
+    } else if (part.type === "agent") {
+      return {
+        id: `${optimisticID}_part_${index}`,
+        type: "agent" as const,
+        name: part.name,
         messageID: optimisticID,
         sessionID,
       };
@@ -295,14 +303,19 @@ export const useSendPrompt = (opcodeUrl: string | null | undefined, directory?: 
                   filename: part.filename,
                   url: part.dataUrl,
                 }
-              : {
-                  type: "file",
-                  mime: "text/plain",
-                  filename: part.name,
-                  url: part.path.startsWith("file:")
-                    ? part.path
-                    : `file://${part.path}`,
-                },
+              : part.type === "agent"
+                ? {
+                    type: "agent",
+                    name: part.name,
+                  }
+                : {
+                    type: "file",
+                    mime: "text/plain",
+                    filename: part.name,
+                    url: part.path.startsWith("file:")
+                      ? part.path
+                      : `file://${part.path}`,
+                  },
         ) || [{ type: "text", text: prompt || "" }],
       };
 
