@@ -169,6 +169,8 @@ export const PromptInput = forwardRef<PromptInputHandle, PromptInputProps>(funct
     return [...agentItems, ...fileItems]
   }, [agents, searchResults, mentionQuery])
   
+  const agentNames = useMemo(() => agents.map(a => a.name), [agents])
+  
 
   const { addUserBashCommand } = useUserBash()
 
@@ -177,7 +179,7 @@ export const PromptInput = forwardRef<PromptInputHandle, PromptInputProps>(funct
     if (!prompt.trim() && imageAttachments.length === 0) return
 
     if (hasActiveStream) {
-      const parts = parsePromptToParts(prompt, attachedFiles, imageAttachments)
+      const parts = parsePromptToParts(prompt, attachedFiles, imageAttachments, agentNames)
       sendPrompt.mutate({
         sessionID,
         parts,
@@ -229,7 +231,7 @@ export const PromptInput = forwardRef<PromptInputHandle, PromptInputProps>(funct
       }
     }
 
-    const parts = parsePromptToParts(prompt, attachedFiles, imageAttachments)
+    const parts = parsePromptToParts(prompt, attachedFiles, imageAttachments, agentNames)
 
     sendPrompt.mutate({
       sessionID,
