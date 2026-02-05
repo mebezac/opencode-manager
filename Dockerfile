@@ -100,7 +100,7 @@ RUN pnpm --filter frontend build
 
 FROM base AS runner
 
-ARG UV_VERSION=0.9.28
+ARG UV_VERSION=0.10.0
 ARG OPENCODE_VERSION=1.1.52
 
 RUN echo "Installing uv=${UV_VERSION} opencode=${OPENCODE_VERSION}" && \
