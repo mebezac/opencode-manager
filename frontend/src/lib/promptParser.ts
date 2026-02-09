@@ -41,7 +41,8 @@ export function filterAgentsByQuery(agents: AgentInfo[], query: string): AgentIn
 export function parsePromptToParts(
   rawInput: string,
   fileMap: Map<string, FileInfo>,
-  imageAttachments?: ImageAttachment[]
+  imageAttachments?: ImageAttachment[],
+  agentNames?: string[]
 ): ContentPart[] {
   const parts: ContentPart[] = []
   let lastIndex = 0
@@ -65,6 +66,8 @@ export function parsePromptToParts(
         path: file.path,
         name: file.name
       })
+    } else if (agentNames?.includes(mentionText)) {
+      parts.push({ type: 'agent', name: mentionText })
     } else {
       parts.push({ type: 'text', content: match[0] })
     }
