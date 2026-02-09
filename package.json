@@ -37,7 +37,7 @@
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",
-    "dotenv": "^17.2.3",
+    "dotenv": "^17.2.4",
     "web-push": "^3.6.7"
   }
 }
