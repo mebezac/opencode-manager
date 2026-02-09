@@ -391,6 +391,4 @@ server.timeout = 900000
 
 logger.info(`🚀 OpenCode WebUI API running on http://${HOST}:${PORT}`)
 
-const WS_PORT = PORT + 1
-const wsServer = startKubernetesWebSocketServer(WS_PORT)
-logger.info(`🔌 Kubernetes WebSocket server running on port ${WS_PORT}`)
+logger.info(`🚀 OpenCode WebUI API running on http://${HOST}:${PORT}`);
