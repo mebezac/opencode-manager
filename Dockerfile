@@ -1,4 +1,4 @@
-FROM ghcr.io/mebezac/byoc-base-image:2026.2.0 AS base
+FROM ghcr.io/mebezac/byoc-base-image:2026.2.1 AS base
 
 WORKDIR /app
 
@@ -32,8 +32,17 @@ RUN pnpm --filter frontend build
 FROM base AS runner
 
 ARG OPENCODE_VERSION=1.1.53
+ARG OPENCODE_INSTALL_DIR=/opt/opencode
+ENV OPENCODE_INSTALL_DIR=${OPENCODE_INSTALL_DIR}
+ENV PATH=${OPENCODE_INSTALL_DIR}:${PATH}
 
-RUN mise use -g opencode@${OPENCODE_VERSION}
+RUN set -eux; \
+  mkdir -p "${OPENCODE_INSTALL_DIR}"; \
+  curl -fsSL "https://github.com/anomalyco/opencode/releases/download/v${OPENCODE_VERSION}/opencode-linux-x64-baseline.tar.gz" -o /tmp/opencode.tar.gz; \
+  tar -xzf /tmp/opencode.tar.gz -C "${OPENCODE_INSTALL_DIR}"; \
+  rm -f /tmp/opencode.tar.gz; \
+  chmod +x "${OPENCODE_INSTALL_DIR}/opencode"; \
+  chown -R opencode:opencode "${OPENCODE_INSTALL_DIR}"
 
 ENV NODE_ENV=production
 ENV HOST=0.0.0.0
