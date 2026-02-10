@@ -17,14 +17,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 120
-    strategy:
-      fail-fast: false
-      matrix:
-        variant:
-          - suffix: ""
-            bun_variant: ""
-          - suffix: "-baseline"
-            bun_variant: "baseline"
     steps:
       - name: Get PR info
         id: pr
@@ -60,8 +52,8 @@ jobs:
         with:
           images: ghcr.io/${{ github.repository }}
           tags: |
-            type=raw,value=pr-${{ inputs.pr_number }}${{ matrix.variant.suffix }}
-            type=raw,value=${{ steps.pr.outputs.short_sha }}${{ matrix.variant.suffix }}
+            type=raw,value=pr-${{ inputs.pr_number }}
+            type=raw,value=${{ steps.pr.outputs.short_sha }}
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3
@@ -77,8 +69,8 @@ jobs:
         uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
         with:
           registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          username: ${{ secrets.GHCR_USERNAME }}
+          password: ${{ secrets.GHCR_TOKEN }}
 
       - name: Build and push
         uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6
@@ -91,9 +83,9 @@ jobs:
           build-args: |
             UV_VERSION=${{ steps.versions.outputs.uv }}
             OPENCODE_VERSION=${{ steps.versions.outputs.opencode }}
-            BUN_VARIANT=${{ matrix.variant.bun_variant }}
-          cache-from: type=gha,scope=buildkit-pr-${{ matrix.variant.suffix }}
-          cache-to: type=gha,mode=min,scope=buildkit-pr-${{ matrix.variant.suffix }}
+            BUN_VARIANT=baseline
+          cache-from: type=gha,scope=buildkit-pr-baseline
+          cache-to: type=gha,mode=min,scope=buildkit-pr-baseline
           target: runner
           provenance: false
           sbom: false
