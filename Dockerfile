@@ -31,14 +31,14 @@ RUN pnpm --filter frontend build
 
 FROM base AS runner
 
-ARG OPENCODE_VERSION=1.1.53
+ARG OPENCODE_VERSION=v1.1.55
 ARG OPENCODE_INSTALL_DIR=/opt/opencode
 ENV OPENCODE_INSTALL_DIR=${OPENCODE_INSTALL_DIR}
 ENV PATH=${OPENCODE_INSTALL_DIR}:${PATH}
 
 RUN set -eux; \
   mkdir -p "${OPENCODE_INSTALL_DIR}"; \
-  curl -fsSL "https://github.com/anomalyco/opencode/releases/download/v${OPENCODE_VERSION}/opencode-linux-x64-baseline.tar.gz" -o /tmp/opencode.tar.gz; \
+  curl -fsSL "https://github.com/anomalyco/opencode/releases/download/${OPENCODE_VERSION}/opencode-linux-x64-baseline.tar.gz" -o /tmp/opencode.tar.gz; \
   tar -xzf /tmp/opencode.tar.gz -C "${OPENCODE_INSTALL_DIR}"; \
   rm -f /tmp/opencode.tar.gz; \
   chmod +x "${OPENCODE_INSTALL_DIR}/opencode"; \
