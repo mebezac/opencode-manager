@@ -137,9 +137,13 @@ docker-compose restart
 docker exec -it opencode-manager sh
 ```
 
-### Dev Servers (Kubernetes MCP)
+### Dev Servers and Tooling (Mise-first)
 
-Dev servers run inside Kubernetes pods via the Kubernetes MCP server and are exposed through Services and Ingresses. Do not rely on local port mappings for dev server access.
+OpenCode Manager uses a mise-first workflow for environment setup and command execution.
+
+- If a repository has a `mise.toml`, run `mise install` at the project root before other commands
+- Use mise-managed runtimes and tools for project commands (for example `mise exec -- <command>` when you need pinned versions)
+- If no `mise.toml` is present, use the preinstalled base-image tooling
 
 ### Global Agent Instructions (AGENTS.md)
 
@@ -147,8 +151,8 @@ OpenCode Manager creates a default `AGENTS.md` file in the workspace config dire
 
 **Default instructions include:**
 - Reserved ports (5003 for OpenCode Manager, 5551 for OpenCode server)
-- Kubernetes MCP execution (tests, dev servers, staging/preview)
-- Exposing dev servers via Kubernetes Services and Ingresses via MCP
+- Mise-first execution (`mise.toml` detection, `mise install`, and mise-managed commands)
+- Preinstalled base-image tools with intended usage guidance (for example `gh`, `jq`, `rclone`, `rg`, `uv`)
 
 **Editing AGENTS.md:**
 - Via UI: Settings > OpenCode > Global Agent Instructions
@@ -199,4 +203,3 @@ OpenCode WebUI supports OAuth authentication for select providers, offering a mo
    - **"Use Authorization Code"** - Provides code for manual entry
 5. **Complete authorization** in the browser or enter the provided code
 6. **Connection status** will show as "Configured" when successful
-

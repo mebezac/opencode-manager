@@ -61,35 +61,41 @@ export const DEFAULT_AGENTS_MD = `# OpenCode Manager - Global Agent Instructions
 - **DO NOT** kill or stop processes on ports 5003 or 5551
 - **DO NOT** modify files in the \`.config/opencode\` directory unless explicitly requested
 
-## Kubernetes MCP Execution
+## Mise-first Tooling Workflow
 
-- All tests, builds, package installs, dev servers, and staging/preview environments must run in Kubernetes pods via the Kubernetes MCP server
-- Do not run commands locally or install tools locally, except when the user explicitly asks to install or configure MCP servers
-- If the Kubernetes MCP server is unavailable or misconfigured, stop and request that it be installed/configured before proceeding
+- Before running project commands, check the repository for a \`mise.toml\` file
+- If \`mise.toml\` exists, run \`mise install\` at the project root first to install required runtimes and tools
+- Use mise-managed tools for execution after install (for example, run commands through \`mise exec -- <command>\` when you need to guarantee the project-pinned versions)
+- If a project does not include \`mise.toml\`, use the preinstalled base-image tools directly
 
-### Dev Server Exposure
+### Version Hints to Respect
 
-- Expose dev servers with Kubernetes Services and Ingresses via MCP
-- Bind to \`0.0.0.0\` inside the pod so Services can route traffic
+Check these files and honor exact versions when selecting runtimes/tools:
+- \`mise.toml\` or \`.tool-versions\`
+- \`package.json\` (\`engines.node\`)
+- \`.nvmrc\` or \`.node-version\`
+- \`.python-version\`
+- \`Dockerfile\` (\`FROM\` image)
+- \`Gemfile\` (\`ruby\` directive)
+- \`go.mod\` (\`go\` directive)
+- \`Cargo.toml\`
+- \`pom.xml\` or \`build.gradle\`
 
-### Matching Container Images to Project Requirements
+## Preinstalled Base-Image Tools
 
-When creating pods, always match the container image to the project's specified versions:
-
-**Check these files for version requirements (read-only hints from the repo):**
-- \`mise.toml\` or \`.tool-versions\` - version manager hints from upstream repo
-- \`package.json\` (\`engines.node\`) - Node.js version
-- \`.nvmrc\` or \`.node-version\` - Node.js version
-- \`.python-version\` - Python version
-- \`Dockerfile\` (\`FROM\` image) - Base container image
-- \`Gemfile\` (\`ruby\` directive) - Ruby version
-- \`go.mod\` (\`go\` directive) - Go version
-- \`Cargo.toml\` - Rust version
-- \`pom.xml\` or \`build.gradle\` - Java version
-
-**Always use exact versions:**
-- ✅ Use: \`node:20.11.0-alpine\`
-- ❌ Avoid: \`node:latest\` or \`node:20\`
+- \`gh\`: GitHub CLI for pull requests, issues, releases, checks, and repository operations.
+- \`jq\`: Fast JSON processor for filtering, transforming, and formatting structured command output.
+- \`rclone\`: Sync and copy files to and from cloud/object storage providers.
+- \`rg\`: Ripgrep for fast recursive code and text search across repositories.
+- \`bat\`: Enhanced file viewer with syntax highlighting and line numbers for safer quick reads.
+- \`lazygit\`: Terminal UI for common Git workflows when a visual Git interface helps.
+- \`tree\`: Display directory structure to quickly inspect repository layout.
+- \`zip\`/\`unzip\`: Create and extract archive files used in build and release workflows.
+- \`rsync\`: Efficient local or remote file synchronization with delta transfers.
+- \`lsof\`: Inspect open files and process-port bindings during debugging.
+- \`htop\`/\`iftop\`: Monitor process and network activity for runtime diagnostics.
+- \`sqlite3\`: Inspect and query SQLite databases from the command line.
+- \`uv\`: Python package and tool manager for fast, reproducible Python tooling.
 
 ## GitHub CLI
 
@@ -133,8 +139,7 @@ gh repo view
 
 - This file is merged with any AGENTS.md files in individual repositories
 - Repository-specific instructions take precedence for their respective codebases
-- Ensure the Kubernetes MCP server is available before suggesting isolated environments
-- Keep all execution inside Kubernetes pods via the Kubernetes MCP server; do not run tasks locally unless explicitly requested
+- Prefer project-defined tooling and versions over global defaults
 `
 
 async function ensureDefaultConfigExists(): Promise<void> {
