@@ -122,7 +122,7 @@ export function SessionDetail() {
   const createSession = useCreateSession(opcodeUrl, repoDirectory);
   const isTitleGenerating = useTitleGenerating(sessionId);
   const { open: openSettings } = useSettingsDialog();
-  const { model, modelString } = useModelSelection(opcodeUrl, repoDirectory);
+  const { model, modelString } = useModelSelection(opcodeUrl, repoDirectory, sessionId);
   const isEditingMessage = useUIState((state) => state.isEditingMessage);
 
   const setSessionStatus = useSessionStatus((state) => state.setStatus);
@@ -485,6 +485,7 @@ export function SessionDetail() {
         onOpenChange={setModelDialogOpen}
         opcodeUrl={opcodeUrl}
         directory={repoDirectory}
+        sessionID={sessionId}
       />
 
       {/* Sessions Dialog */}

@@ -24,6 +24,7 @@ interface ModelSelectDialogProps {
   onOpenChange: (open: boolean) => void;
   opcodeUrl?: string | null;
   directory?: string;
+  sessionID?: string;
 }
 
 interface FlatModel {
@@ -348,11 +349,12 @@ export function ModelSelectDialog({
   onOpenChange,
   opcodeUrl,
   directory,
+  sessionID,
 }: ModelSelectDialogProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedProvider, setSelectedProvider] = useState<string>("");
 
-  const { modelString, setModel, recentModels, favoriteModels, toggleFavorite } = useModelSelection(opcodeUrl, directory);
+  const { modelString, setModel, recentModels, favoriteModels, toggleFavorite } = useModelSelection(opcodeUrl, directory, sessionID);
   const currentModel = modelString || "";
 
   const { data: allProviders = [], isLoading: loading } = useQuery({

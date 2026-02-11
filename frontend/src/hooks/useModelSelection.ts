@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useCallback } from 'react'
 import { useConfig } from './useOpenCode'
 import { useModelStore, type ModelSelection } from '@/stores/modelStore'
 
@@ -14,26 +14,46 @@ interface UseModelSelectionResult {
 
 export function useModelSelection(
   opcodeUrl: string | null | undefined,
-  directory?: string
+  directory?: string,
+  sessionID?: string
 ): UseModelSelectionResult {
   const { data: config } = useConfig(opcodeUrl, directory)
-  const { model, recentModels, favoriteModels, setModel, syncFromConfig, getModelString, toggleFavorite, isFavorite, loadFavoritesFromAPI } = useModelStore()
+  const store = useModelStore()
+
+  // Sync from config only on initial load (no session model yet)
+  useEffect(() => {
+    // Only sync from config if we don't have a model and no session model
+    if (!store.model && sessionID && !store.getSessionModel(sessionID)) {
+      store.syncFromConfig(config?.model)
+    }
+  }, [config?.model, store, sessionID])
+
+  // Load session-specific model when session changes
+  useEffect(() => {
+    if (sessionID) {
+      const sessionModel = store.getSessionModel(sessionID)
+      if (sessionModel) {
+        // Update the global model to match this session's model
+        store.setModel(sessionModel, sessionID)
+      }
+    }
+  }, [sessionID, store])
 
   useEffect(() => {
-    syncFromConfig(config?.model)
-  }, [config?.model, syncFromConfig])
+    store.loadFavoritesFromAPI()
+  }, [store])
 
-  useEffect(() => {
-    loadFavoritesFromAPI()
-  }, [loadFavoritesFromAPI])
+  const setModel = useCallback((model: ModelSelection) => {
+    store.setModel(model, sessionID)
+  }, [store, sessionID])
 
   return {
-    model,
-    modelString: getModelString(),
-    recentModels,
-    favoriteModels,
+    model: store.model,
+    modelString: store.getModelString(),
+    recentModels: store.recentModels,
+    favoriteModels: store.favoriteModels,
     setModel,
-    toggleFavorite,
-    isFavorite,
+    toggleFavorite: store.toggleFavorite,
+    isFavorite: store.isFavorite,
   }
 }

@@ -707,7 +707,7 @@ export const PromptInput = forwardRef<PromptInputHandle, PromptInputProps>(funct
   const modeBg = currentMode === 'plan' ? 'bg-yellow-500/20 border-yellow-400 hover:bg-yellow-500/30 hover:border-yellow-300' : 'bg-green-500/20 border-green-400 hover:bg-green-500/30 hover:border-green-300'
   const modeShadow = currentMode === 'plan' ? 'shadow-yellow-500/20 hover:shadow-yellow-500/30' : 'shadow-green-500/20 hover:shadow-green-500/30'
 
-const { model, modelString } = useModelSelection(opcodeUrl, directory)
+const { model, modelString } = useModelSelection(opcodeUrl, directory, sessionID)
   const currentModel = modelString || ''
   const displayModelName = model?.modelID || currentModel
   const isMobile = useMobile()
@@ -833,10 +833,11 @@ return (
             ) : (
                !hideSecondaryButtons && (
                  <ModelQuickSelect
-                   opcodeUrl={opcodeUrl}
-                   directory={directory}
-                   onOpenFullDialog={() => onShowModelsDialog?.()}
-                 >
+                    opcodeUrl={opcodeUrl}
+                    directory={directory}
+                    sessionID={sessionID}
+                    onOpenFullDialog={() => onShowModelsDialog?.()}
+                  >
                    <button
                      className="px-2.5 py-0.5 md:px-3 min-h-[36px] rounded-lg text-xs md:text-sm font-medium border bg-muted border-border text-muted-foreground hover:bg-muted-foreground/10 hover:border-foreground/30 transition-colors cursor-pointer max-w-[150px] md:max-w-[220px] dark:border-white/30 flex flex-col items-start justify-center"
                    >
