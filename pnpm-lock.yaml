@@ -12,7 +12,7 @@ importers:
         specifier: ^0.7.1
         version: 0.7.1
       dotenv:
-        specifier: ^17.2.4
+        specifier: ^17.3.1
         version: 17.3.1
       web-push:
         specifier: ^3.6.7
@@ -37,7 +37,7 @@ importers:
         specifier: ^7.0.1
         version: 7.0.1
       dotenv:
-        specifier: ^17.2.4
+        specifier: ^17.3.1
         version: 17.3.1
       eventsource:
         specifier: ^4.1.0
@@ -287,7 +287,7 @@ importers:
         version: 5.9.3
     optionalDependencies:
       dotenv:
-        specifier: ^17.2.4
+        specifier: ^17.3.1
         version: 17.3.1
 
 packages:
