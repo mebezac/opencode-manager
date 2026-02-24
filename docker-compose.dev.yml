@@ -1,0 +1,33 @@
+services:
+  app:
+    environment:
+      - NODE_ENV=development
+      - DEBUG=true
+    develop:
+      watch:
+        - action: rebuild
+          path: Dockerfile
+        - action: rebuild
+          path: package.json
+        - action: rebuild
+          path: pnpm-lock.yaml
+        - action: rebuild
+          path: pnpm-workspace.yaml
+        - action: rebuild
+          path: backend/package.json
+        - action: rebuild
+          path: backend/src
+        - action: rebuild
+          path: frontend/package.json
+        - action: rebuild
+          path: frontend/src
+        - action: rebuild
+          path: frontend/public
+        - action: rebuild
+          path: frontend/index.html
+        - action: rebuild
+          path: frontend/vite.config.ts
+        - action: rebuild
+          path: shared/package.json
+        - action: rebuild
+          path: shared/src

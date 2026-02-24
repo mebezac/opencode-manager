@@ -14,6 +14,10 @@ export interface AgentInfo {
   description?: string
 }
 
+function normalizeAgentMention(value: string): string {
+  return value.replace(/^@/, '').toLowerCase()
+}
+
 export function detectMentionTrigger(
   text: string,
   cursorPosition: number
@@ -46,6 +50,9 @@ export function parsePromptToParts(
 ): ContentPart[] {
   const parts: ContentPart[] = []
   let lastIndex = 0
+  const normalizedAgentNameMap = new Map(
+    (agentNames || []).map(agentName => [normalizeAgentMention(agentName), agentName])
+  )
   
   for (const match of rawInput.matchAll(MENTION_PATTERN)) {
     const matchIndex = match.index!
@@ -59,6 +66,7 @@ export function parsePromptToParts(
     
     const mentionText = match[1]
     const file = fileMap.get(mentionText.toLowerCase())
+    const agentName = normalizedAgentNameMap.get(normalizeAgentMention(mentionText))
     
     if (file) {
       parts.push({
@@ -66,8 +74,8 @@ export function parsePromptToParts(
         path: file.path,
         name: file.name
       })
-    } else if (agentNames?.includes(mentionText)) {
-      parts.push({ type: 'agent', name: mentionText })
+    } else if (agentName) {
+      parts.push({ type: 'agent', name: agentName })
     } else {
       parts.push({ type: 'text', content: match[0] })
     }

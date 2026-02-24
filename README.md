@@ -121,6 +121,9 @@ The Docker setup automatically:
 # Start container
 docker-compose up -d
 
+# Start development watch mode (rebuild/restart on code change)
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build --watch
+
 # Stop and remove container
 docker-compose down
 
@@ -136,6 +139,8 @@ docker-compose restart
 # Access container shell
 docker exec -it opencode-manager sh
 ```
+
+Development watch mode uses Docker Compose `develop.watch` and rebuilds the app image when backend, frontend, shared, or Docker config files change.
 
 ### Dev Servers and Tooling (Mise-first)
 

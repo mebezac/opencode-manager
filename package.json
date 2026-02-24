@@ -25,8 +25,9 @@
     "lint:backend": "pnpm --filter backend lint",
     "lint:fix": "pnpm run lint:frontend -- --fix && pnpm run lint:backend -- --fix",
     "generate:openapi": "bun scripts/generate-openapi.ts",
-    "docker:build": "docker-compose build",
+    "docker:build": "docker compose build",
     "docker:up": "docker-compose up -d",
+    "docker:dev": "docker compose -f docker-compose.yml -f docker-compose.dev.yml up --watch",
     "docker:down": "docker-compose down -v",
     "docker:logs": "docker-compose logs -f",
     "docker:restart": "docker-compose restart"
