@@ -14,6 +14,10 @@ export interface AgentInfo {
   description?: string
 }
 
+function normalizeAgentMention(value: string): string {
+  return value.replace(/^@/, '').toLowerCase()
+}
+
 export function detectMentionTrigger(
   text: string,
   cursorPosition: number
@@ -41,10 +45,14 @@ export function filterAgentsByQuery(agents: AgentInfo[], query: string): AgentIn
 export function parsePromptToParts(
   rawInput: string,
   fileMap: Map<string, FileInfo>,
-  imageAttachments?: ImageAttachment[]
+  imageAttachments?: ImageAttachment[],
+  agentNames?: string[]
 ): ContentPart[] {
   const parts: ContentPart[] = []
   let lastIndex = 0
+  const normalizedAgentNameMap = new Map(
+    (agentNames || []).map(agentName => [normalizeAgentMention(agentName), agentName])
+  )
   
   for (const match of rawInput.matchAll(MENTION_PATTERN)) {
     const matchIndex = match.index!
@@ -57,13 +65,25 @@ export function parsePromptToParts(
     }
     
     const mentionText = match[1]
+    const mentionValue = match[0]
     const file = fileMap.get(mentionText.toLowerCase())
+    const agentName = normalizedAgentNameMap.get(normalizeAgentMention(mentionText))
     
     if (file) {
       parts.push({
         type: 'file',
         path: file.path,
         name: file.name
+      })
+    } else if (agentName) {
+      parts.push({
+        type: 'agent',
+        name: agentName,
+        source: {
+          value: mentionValue,
+          start: matchIndex,
+          end: matchIndex + mentionValue.length
+        }
       })
     } else {
       parts.push({ type: 'text', content: match[0] })

@@ -180,8 +180,16 @@ export function ToolCallPart({ part, onFileClick, onChildSessionClick }: ToolCal
     return null
   }
 
+  const getTaskSubagent = () => {
+    if (part.tool !== 'task' || part.state.status === 'pending') return null
+    const input = part.state.input as Record<string, unknown>
+    const subagentType = input?.subagent_type
+    return typeof subagentType === 'string' && subagentType.length > 0 ? subagentType : null
+  }
+
   const previewText = getPreviewText()
   const todoData = getTodoData()
+  const taskSubagent = getTaskSubagent()
   const isFileTool = ['read', 'write', 'edit'].includes(part.tool)
 
   if (isTodoTool) {
@@ -282,6 +290,11 @@ export function ToolCallPart({ part, onFileClick, onChildSessionClick }: ToolCal
       >
         <span className={getStatusColor()}>{getStatusIcon()}</span>
         <span className="font-medium">{part.tool}</span>
+        {taskSubagent && (
+          <span className="text-xs px-1.5 py-0.5 rounded border border-blue-500/30 text-blue-600 dark:text-blue-400">
+            {taskSubagent}
+          </span>
+        )}
 
         {previewText && isFileTool ? (
           <span
