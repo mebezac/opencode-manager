@@ -90,7 +90,6 @@ export const PromptInput = forwardRef<PromptInputHandle, PromptInputProps>(funct
   const [mentionRange, setMentionRange] = useState<{ start: number, end: number } | null>(null)
   const [selectedMentionIndex, setSelectedMentionIndex] = useState(0)
   const [selectedCommandIndex, setSelectedCommandIndex] = useState(0)
-  const [selectedAgent, setSelectedAgent] = useState<string | null>(null)
   const [isFocused, setIsFocused] = useState(false)
   
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -110,7 +109,6 @@ export const PromptInput = forwardRef<PromptInputHandle, PromptInputProps>(funct
       setAttachedFiles(new Map())
       revokeBlobUrls(imageAttachments)
       setImageAttachments([])
-      setSelectedAgent(null)
       if (textareaRef.current) {
         textareaRef.current.style.height = 'auto'
         textareaRef.current.focus()
@@ -147,8 +145,9 @@ export const PromptInput = forwardRef<PromptInputHandle, PromptInputProps>(funct
   const { data: agents = [] } = useAgents(opcodeUrl, directory)
   
   const mentionItems = useMemo((): MentionItem[] => {
+    const mentionableAgents = agents.filter(agent => agent.mode !== 'primary' && !agent.hidden)
     const filteredAgents = filterAgentsByQuery(
-      agents.map(a => ({ name: a.name, description: a.description })),
+      mentionableAgents.map(a => ({ name: a.name, description: a.description })),
       mentionQuery
     )
     
@@ -184,14 +183,13 @@ export const PromptInput = forwardRef<PromptInputHandle, PromptInputProps>(funct
         sessionID,
         parts,
         model: currentModel,
-        agent: selectedAgent || currentMode,
+        agent: currentMode,
         variant: currentVariant
       })
       setPrompt('')
       setAttachedFiles(new Map())
       revokeBlobUrls(imageAttachments)
       setImageAttachments([])
-      setSelectedAgent(null)
       if (textareaRef.current) {
         textareaRef.current.style.height = 'auto'
       }
@@ -237,7 +235,7 @@ export const PromptInput = forwardRef<PromptInputHandle, PromptInputProps>(funct
       sessionID,
       parts,
       model: currentModel,
-      agent: selectedAgent || currentMode,
+      agent: currentMode,
       variant: currentVariant
     })
 
@@ -245,7 +243,6 @@ export const PromptInput = forwardRef<PromptInputHandle, PromptInputProps>(funct
     setAttachedFiles(new Map())
     revokeBlobUrls(imageAttachments)
     setImageAttachments([])
-    setSelectedAgent(null)
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto'
     }
@@ -308,7 +305,6 @@ export const PromptInput = forwardRef<PromptInputHandle, PromptInputProps>(funct
     if (item.type === 'agent') {
       const newPrompt = beforeMention + '@' + item.value + ' ' + afterMention
       setPrompt(newPrompt)
-      setSelectedAgent(item.value)
       
       setTimeout(() => {
         if (textareaRef.current) {

@@ -307,6 +307,7 @@ export const useSendPrompt = (opcodeUrl: string | null | undefined, directory?: 
                 ? {
                     type: "agent",
                     name: part.name,
+                    source: part.source,
                   }
                 : {
                     type: "file",

@@ -24,7 +24,15 @@ describe('parsePromptToParts', () => {
     const parts = parsePromptToParts('@summary inspect @kustomization.yaml', fileMap, undefined, ['summary'])
 
     expect(parts).toEqual([
-      { type: 'agent', name: 'summary' },
+      {
+        type: 'agent',
+        name: 'summary',
+        source: {
+          value: '@summary',
+          start: 0,
+          end: 8
+        }
+      },
       { type: 'text', content: ' inspect ' },
       { type: 'file', path: '/workspace/kubernetes/apps/n8n/kustomization.yaml', name: 'kustomization.yaml' }
     ])

@@ -65,6 +65,7 @@ export function parsePromptToParts(
     }
     
     const mentionText = match[1]
+    const mentionValue = match[0]
     const file = fileMap.get(mentionText.toLowerCase())
     const agentName = normalizedAgentNameMap.get(normalizeAgentMention(mentionText))
     
@@ -75,7 +76,15 @@ export function parsePromptToParts(
         name: file.name
       })
     } else if (agentName) {
-      parts.push({ type: 'agent', name: agentName })
+      parts.push({
+        type: 'agent',
+        name: agentName,
+        source: {
+          value: mentionValue,
+          start: matchIndex,
+          end: matchIndex + mentionValue.length
+        }
+      })
     } else {
       parts.push({ type: 'text', content: match[0] })
     }

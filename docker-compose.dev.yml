@@ -1,7 +1,6 @@
 services:
   app:
     environment:
-      - NODE_ENV=development
       - DEBUG=true
     develop:
       watch:

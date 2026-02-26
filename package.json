@@ -25,12 +25,12 @@
     "lint:backend": "pnpm --filter backend lint",
     "lint:fix": "pnpm run lint:frontend -- --fix && pnpm run lint:backend -- --fix",
     "generate:openapi": "bun scripts/generate-openapi.ts",
-    "docker:build": "docker compose build",
-    "docker:up": "docker-compose up -d",
-    "docker:dev": "docker compose -f docker-compose.yml -f docker-compose.dev.yml up --watch",
-    "docker:down": "docker-compose down -v",
-    "docker:logs": "docker-compose logs -f",
-    "docker:restart": "docker-compose restart"
+    "docker:build": "DOCKER_DEFAULT_PLATFORM=linux/amd64 docker compose build",
+    "docker:up": "DOCKER_DEFAULT_PLATFORM=linux/amd64 docker compose up -d",
+    "docker:dev": "DOCKER_DEFAULT_PLATFORM=linux/amd64 docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build --watch",
+    "docker:down": "DOCKER_DEFAULT_PLATFORM=linux/amd64 docker compose down -v",
+    "docker:logs": "DOCKER_DEFAULT_PLATFORM=linux/amd64 docker compose logs -f",
+    "docker:restart": "DOCKER_DEFAULT_PLATFORM=linux/amd64 docker compose restart"
   },
   "devDependencies": {
     "@types/web-push": "^3.6.4",
