@@ -205,6 +205,15 @@ export type ContentPart =
   | { type: 'text', content: string }
   | { type: 'file', path: string, name: string }
   | { type: 'image', id: string, filename: string, mime: string, dataUrl: string }
+  | {
+      type: 'agent'
+      name: string
+      source?: {
+        value: string
+        start: number
+        end: number
+      }
+    }
 
 export interface FileInfo {
   path: string

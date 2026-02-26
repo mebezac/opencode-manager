@@ -1,4 +1,4 @@
-FROM ghcr.io/mebezac/byoc-base-image:2026.2.1 AS base
+FROM ghcr.io/mebezac/byoc-base-image:2026.2.2 AS base
 
 WORKDIR /app
 
@@ -31,7 +31,7 @@ RUN pnpm --filter frontend build
 
 FROM base AS runner
 
-ARG OPENCODE_VERSION=v1.1.55
+ARG OPENCODE_VERSION=v1.2.15
 ARG OPENCODE_INSTALL_DIR=/opt/opencode
 ENV OPENCODE_INSTALL_DIR=${OPENCODE_INSTALL_DIR}
 ENV PATH=${OPENCODE_INSTALL_DIR}:${PATH}
