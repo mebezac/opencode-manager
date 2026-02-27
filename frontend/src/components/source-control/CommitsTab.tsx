@@ -5,6 +5,7 @@ import { GIT_UI_COLORS } from '@/lib/git-status-styles'
 
 interface CommitsTabProps {
   repoId: number
+  currentBranch: string
   onSelectCommit?: (hash: string) => void
 }
 
@@ -36,8 +37,8 @@ function formatRelativeTime(timestamp: string): string {
   return `${diffMonths}mo ago`
 }
 
-export function CommitsTab({ repoId, onSelectCommit }: CommitsTabProps) {
-  const { data, isLoading, error } = useGitLog(repoId, 50)
+export function CommitsTab({ repoId, currentBranch, onSelectCommit }: CommitsTabProps) {
+  const { data, isLoading, error } = useGitLog(repoId, 50, currentBranch)
 
   if (isLoading) {
     return (

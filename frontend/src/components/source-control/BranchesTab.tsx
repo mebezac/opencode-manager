@@ -42,6 +42,7 @@ export function BranchesTab({ repoId, currentBranch, repoUrl, isRepoWorktree }: 
       queryClient.setQueryData(['repo', repoId], updatedRepo)
       queryClient.invalidateQueries({ queryKey: ['repos'] })
       queryClient.invalidateQueries({ queryKey: ['gitStatus', repoId] })
+      queryClient.invalidateQueries({ queryKey: ['gitLog', repoId] })
       refetch()
       showToast.success(`Switched to branch: ${updatedRepo.currentBranch}`)
     },

@@ -32,7 +32,6 @@ export class GitLogService {
         '-C',
         repoPath,
         'log',
-        `--all`,
         `-n`,
         String(limit),
         '--format=%H|%an|%ae|%at|%s'

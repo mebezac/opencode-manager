@@ -18,6 +18,7 @@ import { useOpenCodeClient } from '@/hooks/useOpenCode'
 interface ModelQuickSelectProps {
   opcodeUrl: string | null | undefined
   directory?: string
+  sessionID?: string
   onOpenFullDialog: () => void
   disabled?: boolean
   children: React.ReactNode
@@ -26,11 +27,12 @@ interface ModelQuickSelectProps {
 export function ModelQuickSelect({
   opcodeUrl,
   directory,
+  sessionID,
   onOpenFullDialog,
   disabled,
   children,
 }: ModelQuickSelectProps) {
-  const { modelString, recentModels, setModel } = useModelSelection(opcodeUrl, directory)
+  const { modelString, recentModels, setModel } = useModelSelection(opcodeUrl, directory, sessionID)
   const { availableVariants, currentVariant, setVariant, clearVariant, hasVariants } = useVariants(opcodeUrl, directory)
   const client = useOpenCodeClient(opcodeUrl, directory)
 

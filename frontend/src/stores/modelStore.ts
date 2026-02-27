@@ -8,6 +8,7 @@ export interface ModelSelection {
 
 interface ModelStore {
   model: ModelSelection | null
+  sessionModels: Record<string, ModelSelection>
   recentModels: ModelSelection[]
   favoriteModels: ModelSelection[]
   variants: Record<string, string | undefined>
@@ -15,7 +16,8 @@ interface ModelStore {
   favoritesLoaded: boolean
   lastConfigModel: string | undefined
 
-  setModel: (model: ModelSelection) => void
+  setModel: (model: ModelSelection, sessionID?: string) => void
+  getSessionModel: (sessionID: string) => ModelSelection | null
   syncFromConfig: (configModel: string | undefined) => void
   getModelString: () => string | null
   setVariant: (model: ModelSelection, variant: string | undefined) => void
@@ -42,6 +44,7 @@ export const useModelStore = create<ModelStore>()(
   persist(
     (set, get) => ({
       model: null,
+      sessionModels: {},
       recentModels: [],
       favoriteModels: [],
       variants: {},
@@ -49,7 +52,7 @@ export const useModelStore = create<ModelStore>()(
       favoritesLoaded: false,
       lastConfigModel: undefined,
 
-      setModel: (model: ModelSelection) => {
+      setModel: (model: ModelSelection, sessionID?: string) => {
         set((state) => {
           const newRecent = [
             model,
@@ -58,17 +61,35 @@ export const useModelStore = create<ModelStore>()(
             ),
           ].slice(0, MAX_RECENT_MODELS)
 
-          return {
+          const updates: Partial<ModelStore> = {
             model,
             recentModels: newRecent,
           }
+
+          // Also save per-session model if sessionID provided
+          if (sessionID) {
+            updates.sessionModels = {
+              ...state.sessionModels,
+              [sessionID]: model,
+            }
+          }
+
+          return updates
         })
+      },
+
+      getSessionModel: (sessionID: string) => {
+        const state = get()
+        return state.sessionModels[sessionID] || null
       },
 
       syncFromConfig: (configModel: string | undefined) => {
         const state = get()
         if (state.lastConfigModel === configModel) return
-        
+
+        // Only sync from config if user hasn't explicitly selected a model
+        if (state.model) return
+
         if (configModel) {
           const parsed = parseModelString(configModel)
           if (parsed) {
@@ -78,7 +99,7 @@ export const useModelStore = create<ModelStore>()(
                 (m) => !(m.providerID === parsed.providerID && m.modelID === parsed.modelID)
               ),
             ].slice(0, MAX_RECENT_MODELS)
-            
+
             set({ model: parsed, lastConfigModel: configModel, recentModels: newRecent })
             return
           }
@@ -126,7 +147,7 @@ export const useModelStore = create<ModelStore>()(
         const isFav = state.favoriteModels.some(
           (m) => m.providerID === model.providerID && m.modelID === model.modelID
         )
-        
+
         try {
           if (isFav) {
             await fetch(`${API_BASE_URL}/api/favorites`, {
@@ -134,7 +155,7 @@ export const useModelStore = create<ModelStore>()(
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ providerID: model.providerID, modelID: model.modelID })
             })
-            
+
             set({
               favoriteModels: state.favoriteModels.filter(
                 (m) => !(m.providerID === model.providerID && m.modelID === model.modelID)
@@ -146,7 +167,7 @@ export const useModelStore = create<ModelStore>()(
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ providerID: model.providerID, modelID: model.modelID })
             })
-            
+
             set({
               favoriteModels: [...state.favoriteModels, model],
             })
@@ -166,7 +187,7 @@ export const useModelStore = create<ModelStore>()(
       loadFavoritesFromAPI: async () => {
         const state = get()
         if (state.favoritesLoaded) return
-        
+
         try {
           const response = await fetch(`${API_BASE_URL}/api/favorites`)
           if (response.ok) {
@@ -190,6 +211,7 @@ export const useModelStore = create<ModelStore>()(
       name: 'opencode-model-selection',
       partialize: (state) => ({
         model: state.model,
+        sessionModels: state.sessionModels,
         recentModels: state.recentModels,
         favoriteModels: state.favoriteModels,
         variants: state.variants,

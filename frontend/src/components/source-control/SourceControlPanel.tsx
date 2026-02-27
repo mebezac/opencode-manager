@@ -198,7 +198,7 @@ export function SourceControlPanel({
             />
           )}
           {activeTab === 'commits' && (
-            <CommitsTab repoId={repoId} />
+            <CommitsTab repoId={repoId} currentBranch={currentBranch} />
           )}
           {activeTab === 'branches' && (
             <BranchesTab repoId={repoId} currentBranch={currentBranch} repoUrl={repoUrl} isRepoWorktree={isRepoWorktree} />
