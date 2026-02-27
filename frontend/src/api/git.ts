@@ -196,9 +196,9 @@ export function useFileDiff(repoId: number | undefined, path: string | undefined
   })
 }
 
-export function useGitLog(repoId: number | undefined, limit?: number) {
+export function useGitLog(repoId: number | undefined, limit?: number, branchKey?: string) {
   return useQuery({
-    queryKey: ['gitLog', repoId, limit],
+    queryKey: ['gitLog', repoId, limit, branchKey],
     queryFn: () => repoId ? fetchGitLog(repoId, limit) : Promise.reject(new Error('No repo ID')),
     enabled: !!repoId,
   })
