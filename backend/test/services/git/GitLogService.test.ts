@@ -49,7 +49,7 @@ describe('GitLogService', () => {
     vi.clearAllMocks()
     database = {} as Database
     service = new GitLogService(mockGitAuthService as any, mockGitDiffService as any)
-    mockGitAuthService.getGitEnvironment.mockResolvedValue({})
+    mockGitAuthService.getGitEnvironment.mockReturnValue({})
   })
 
   describe('getLog', () => {
@@ -70,7 +70,7 @@ describe('GitLogService', () => {
 
       expect(getRepoByIdMock).toHaveBeenCalledWith(database, 1)
       expect(executeCommandMock).toHaveBeenCalledWith(
-        ['git', '-C', '/repos/test-repo', 'log', '--all', '-n', '10', '--format=%H|%an|%ae|%at|%s'],
+        ['git', '-C', '/repos/test-repo', 'log', '-n', '10', '--format=%H|%an|%ae|%at|%s'],
         { env: expect.anything() }
       )
       expect(result).toHaveLength(2)
@@ -105,7 +105,7 @@ describe('GitLogService', () => {
       await service.getLog(1, database, 5)
 
       expect(executeCommandMock).toHaveBeenCalledWith(
-        ['git', '-C', '/repos/test-repo', 'log', '--all', '-n', '5', '--format=%H|%an|%ae|%at|%s'],
+        ['git', '-C', '/repos/test-repo', 'log', '-n', '5', '--format=%H|%an|%ae|%at|%s'],
         { env: expect.anything() }
       )
     })
