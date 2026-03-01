@@ -1,4 +1,4 @@
-FROM ghcr.io/mebezac/byoc-base-image:2026.2.2 AS base
+FROM ghcr.io/mebezac/byoc-base-image:2026.2.3 AS base
 
 WORKDIR /app
 
