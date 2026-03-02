@@ -291,7 +291,7 @@ export function ToolCallPart({ part, onFileClick, onChildSessionClick }: ToolCal
         <span className={getStatusColor()}>{getStatusIcon()}</span>
         <span className="font-medium">{part.tool}</span>
         {taskSubagent && (
-          <span className="text-xs px-1.5 py-0.5 rounded border border-blue-500/30 text-blue-600 dark:text-blue-400">
+          <span className="text-xs px-1.5 py-0.5 rounded border border-blue-500/30 text-blue-600 dark:text-blue-400 shrink-0">
             {taskSubagent}
           </span>
         )}
@@ -304,13 +304,13 @@ export function ToolCallPart({ part, onFileClick, onChildSessionClick }: ToolCal
                 onFileClick(previewText)
               }
             }}
-            className="text-blue-600 dark:text-blue-400 text-xs truncate hover:text-blue-700 dark:hover:text-blue-300 cursor-pointer underline decoration-dotted"
+            className="text-blue-600 dark:text-blue-400 text-xs truncate min-w-0 hover:text-blue-700 dark:hover:text-blue-300 cursor-pointer underline decoration-dotted"
             title={`Click to open ${previewText}`}
           >
             {previewText}
           </span>
         ) : previewText ? (
-          <span className="text-muted-foreground text-xs truncate">{previewText}</span>
+          <span className="text-muted-foreground text-xs truncate min-w-0">{previewText}</span>
         ) : null}
 
         {part.tool === 'task' && (() => {
@@ -324,7 +324,7 @@ export function ToolCallPart({ part, onFileClick, onChildSessionClick }: ToolCal
                 e.stopPropagation()
                 onChildSessionClick?.(sessionId)
               }}
-              className="text-purple-600 dark:text-purple-400 text-xs hover:text-purple-700 dark:hover:text-purple-300 cursor-pointer underline decoration-dotted flex items-center gap-1"
+              className="text-purple-600 dark:text-purple-400 text-xs hover:text-purple-700 dark:hover:text-purple-300 cursor-pointer underline decoration-dotted flex items-center gap-1 shrink-0"
               title="View subagent session"
             >
               <ExternalLink className="w-3 h-3" />
@@ -332,7 +332,7 @@ export function ToolCallPart({ part, onFileClick, onChildSessionClick }: ToolCal
             </span>
           ) : null
         })()}
-         <span className="text-muted-foreground text-xs ml-auto">({isWaitingPermission ? 'awaiting permission' : isWaitingQuestion ? 'awaiting answer' : part.state.status})</span>
+         <span className="text-muted-foreground text-xs ml-auto shrink-0">({isWaitingPermission ? 'awaiting permission' : isWaitingQuestion ? 'awaiting answer' : part.state.status})</span>
       </button>
 
       {expanded && (
