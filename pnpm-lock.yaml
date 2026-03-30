@@ -29,7 +29,7 @@ importers:
     dependencies:
       '@hono/node-server':
         specifier: ^1.19.11
-        version: 1.19.11(hono@4.12.8)
+        version: 1.19.11(hono@4.12.9)
       '@opencode-manager/shared':
         specifier: workspace:*
         version: link:../shared
@@ -43,8 +43,8 @@ importers:
         specifier: ^4.1.0
         version: 4.1.0
       hono:
-        specifier: ^4.12.8
-        version: 4.12.8
+        specifier: ^4.12.9
+        version: 4.12.9
       js-yaml:
         specifier: ^4.1.1
         version: 4.1.1
@@ -3267,8 +3267,8 @@ packages:
     resolution: {integrity: sha512-Xwwo44whKBVCYoliBQwaPvtd/2tYFkRQtXDWj1nackaV2JPXx3L0+Jvd8/qCJ2p+ML0/XVkJ2q+Mr+UVdpJK5w==}
     engines: {node: '>=12.0.0'}
 
-  hono@4.12.8:
-    resolution: {integrity: sha512-VJCEvtrezO1IAR+kqEYnxUOoStaQPGrCmX3j4wDTNOcD1uRPFpGlwQUIW8niPuvHXaTUxeOUl5MMDGrl+tmO9A==}
+  hono@4.12.9:
+    resolution: {integrity: sha512-wy3T8Zm2bsEvxKZM5w21VdHDDcwVS1yUFFY6i8UobSsKfFceT7TOwhbhfKsDyx7tYQlmRM5FLpIuYvNFyjctiA==}
     engines: {node: '>=16.9.0'}
 
   html-encoding-sniffer@6.0.0:
@@ -5945,9 +5945,9 @@ snapshots:
 
   '@floating-ui/utils@0.2.10': {}
 
-  '@hono/node-server@1.19.11(hono@4.12.8)':
+  '@hono/node-server@1.19.11(hono@4.12.9)':
     dependencies:
-      hono: 4.12.8
+      hono: 4.12.9
 
   '@hookform/resolvers@5.2.2(react-hook-form@7.71.2(react@19.2.4))':
     dependencies:
@@ -8282,7 +8282,7 @@ snapshots:
 
   highlight.js@11.11.1: {}
 
-  hono@4.12.8: {}
+  hono@4.12.9: {}
 
   html-encoding-sniffer@6.0.0:
     dependencies:
